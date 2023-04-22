@@ -31,11 +31,27 @@ DOS_START:
 	MOV AL, '>'
 	INT 0x10
 
+	MOV AH, 0x02
+	MOV DI, COMMAND
+	MOV CX, 64
+	INT 0x80
+
+	MOV AH, 0x0E
+	MOV AL, 0x0A
+	INT 0x10
+	MOV AL, 0x0D
+	INT 0x10
+
+	JMP DOS_START
+
 STOP:
 	HLT
 	JMP STOP
 
-; Procedures
+; COMMANDS
+; --------
+
+; PROCEDURES
 ; ----------
 
 ; ES:BX <- File name in directory entry.
@@ -88,13 +104,33 @@ MEMFCPY:
 	POP AX
 	RET
 
+; AX <- Current cluster.
+;
+; AX -> Next cluster.
 GET_NEXT_CLUSTER:
 	PUSH ES
 	PUSH BX
 
 	MOV BX, FILESYSTEM >> 4
 	MOV ES, BX
-	MOV AX, BX
+	MOV BX, AX
+	SHR BX, 1
+	ADD BX, AX
+
+	TEST AX, 1
+	MOV AX, WORD[ES:BX]
+	JZ .EVEN_CLUSTER
+
+	SHR AX, 4
+	JMP .ODD_CLUSTER
+
+.EVEN_CLUSTER:
+	AND AX, 0x0FFF
+	
+.ODD_CLUSTER:
+	POP BX
+	POP ES
+	RET
 
 ; AX <- LBA value.
 ; CL <- Number of sectors to read.
@@ -182,7 +218,7 @@ LBA_TO_CHS:
 	POP AX
 	RET
 
-; FDOS interrupt (INT 0x80)
+; FDOS INTERRUPT (INT 0x80)
 ; -------------------------
 
 DOS_INT:
@@ -211,7 +247,6 @@ EXIT_INT:
 
 	MOV AX, DOS_SEGMENT
 	MOV DS, AX
-	MOV ES, AX
 
 	XOR AX, AX
 	MOV SS, AX
@@ -233,6 +268,52 @@ PRINT_INT:
 
 	JMP RET_INT
 
+; AH = 0x02
+; SI = Pointer to buffer.
+; CX = Maximum number of bytes to get from the user.
+; Scan terminates when the enter key is pressed.
+SCAN_INT:
+	MOV DX, SI	
+
+.SCAN_LOOP:
+	MOV AH, 0x00
+	INT 0x16
+
+	CMP AL, 0x0D
+	JE RET_INT
+
+	MOV AH, 0x0E
+
+	CMP AL, 0x08
+	JE .BACKSPACE_PRESSED
+
+	TEST CX, CX
+	JZ .SCAN_LOOP
+
+	INT 0x10
+
+	MOV BYTE[SI], AL
+	INC SI
+	LOOP .SCAN_LOOP
+
+.BACKSPACE_PRESSED:
+	CMP SI, DX
+	JE .SCAN_LOOP
+
+	MOV AL, 0x08
+	INT 0x10
+
+	MOV AL, ' '
+	INT 0x10
+
+	MOV AL, 0x08
+	INT 0x10
+
+	DEC SI
+	MOV BYTE[SI], 0x00
+	INC CX
+	JMP .SCAN_LOOP
+
 RET_CODE_INT:
 	POPA
 	PUSH BX
@@ -253,11 +334,14 @@ INT_RET_CODE: DB 0
 INT_JUMP_TABLE:
 EXIT_INT_ADDRESS: DW EXIT_INT
 PRINT_INT_ADDRESS: DW PRINT_INT
+SCAN_INT_ADDRESS: DW SCAN_INT
 RETURN_FROM_INT_ADDRESS: TIMES 256 - ((RETURN_FROM_INT_ADDRESS - INT_JUMP_TABLE) / 2) DW RET_INT
 INT_JUMP_TABLE_END:
 
 DOS_STARTUP_MSG: DB "This is FDOS version I.", 0x0A, 0x0D, 0x00
 DOS_STARTUP_MSG_END:
+
+COMMAND: TIMES 65 DB 0
 
 BPB:
 SHORT_JUMP:
