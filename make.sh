@@ -11,3 +11,9 @@ mkfs.fat -F 12 img/floppy1440.img
 
 dd if=bin/boot.bin of=img/floppy1440.img conv=notrunc
 mcopy -i img/floppy1440.img bin/dos.bin "::DOS.SYS"
+
+mcopy -i img/floppy1440.img bin/boot.bin "::lorem"
+mcopy -i img/floppy1440.img bin/boot.bin "::ipsum"
+mcopy -i img/floppy1440.img bin/boot.bin "::dolor"
+mcopy -i img/floppy1440.img bin/boot.bin "::sit"
+mcopy -i img/floppy1440.img bin/boot.bin "::amet"
