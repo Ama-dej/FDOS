@@ -97,12 +97,19 @@ FIND_COMMAND:
 	CMP BYTE[SI], 0xFF
 	JNE FIND_COMMAND
 
+	CMP BYTE[COMMAND_PARSED], '\'
+	JE LOAD_BINARY
+
 	MOV AH, 0x01
 	MOV SI, COMMAND_NOT_FOUND_MSG
 	MOV CX, COMMAND_NOT_FOUND_MSG_END - COMMAND_NOT_FOUND_MSG
 	INT 0x80
 
 	JMP DOS_START
+
+LOAD_BINARY:
+	XOR AH, AH
+	INT 0x80
 
 COMMAND_FOUND:
 	SHL BX, 1
@@ -115,11 +122,14 @@ COMMAND_FOUND:
 ; COMMANDS
 ; --------
 
+; Clears the screen.
+; More specificaly sets the screen to 80x25 CGA mode (which is basically clearing the screen).
 CLS:
 	MOV AX, 0x0003
 	INT 0x10
 	INT 0x80
 
+; Prints out all files and their sizes (in KiB) in a directory.
 DIR:
 	XOR BX, BX
 	MOV ES, BX
@@ -144,8 +154,7 @@ DIR:
 	CALL PUTCHAR
 
 	CALL GET_FILE_SIZE
-	MOV AH, 0x03
-	INT 0x80
+	CALL PRINT_FILE_SIZE
 
 	ADD BX, 32
 	MOV CX, 3
@@ -172,8 +181,7 @@ DIR:
 	CALL PUTCHAR
 
 	CALL GET_FILE_SIZE
-	MOV AH, 0x03
-	INT 0x80
+	CALL PRINT_FILE_SIZE
 
 	ADD BX, 32
 	LOOP .PRINT_MORE
@@ -186,6 +194,7 @@ DIR:
 	XOR AH, AH
 	INT 0x80
 
+; Does a system reboot.
 REBOOT:
 	XOR AH, AH
 	INT 0x13
@@ -193,6 +202,55 @@ REBOOT:
 
 ; PROCEDURES
 ; ----------
+
+; SI <- Filename to convert.
+; DI <- Pointer to buffer.
+CONVERT_TO_8_3:
+	PUSHA
+
+	MOV AL, ' '
+	MOV BX, DI
+	MOV CX, 11
+	CALL MEMSET
+
+.LOOP:
+	MOV AL, BYTE[SI]
+	INC SI
+
+	DEC CX
+
+	CMP AL, 0
+	JZ .OUT
+
+	CMP AL, '.'
+	JE .LOOP
+
+	MOV BYTE[DI], AL
+	INC DI
+
+	TEST CX, CX
+	JNZ .LOOP
+
+.OUT:
+	POPA
+	RET
+
+; DX <- File size in KiB.
+PRINT_FILE_SIZE:
+	PUSH AX
+	PUSH CX
+	PUSH SI
+
+	MOV AH, 0x03
+	INT 0x80
+
+	MOV AL, 'K'
+	CALL PUTCHAR
+
+	POP SI
+	POP CX
+	POP AX
+	RET
 
 ; ES:BX <- Pointer to file entry.
 ;
@@ -683,7 +741,7 @@ EBR:
 DRIVE_NUMBER: DB 0
 RESERVED: DB 0
 SIGNATURE: DB 0x0
-VOLUME_ID: DD 0x16DD0055
-VOLUME_LABEL: DB "16-DOS     "
+VOLUME_ID: DD 0xFFDD0055
+VOLUME_LABEL: DB "FDOS       "
 IDENTIFIER_STRING: DB "FAT12   "
 BOOT_CODE:
