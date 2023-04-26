@@ -108,19 +108,17 @@ FIND_COMMAND:
 	JMP DOS_START
 
 LOAD_BINARY:
-	XOR BX, BX
-	MOV ES, BX
-	MOV BX, WORD[CURRENT_DIRECTORY]
+	MOV AX, DOS_SEGMENT
+	MOV ES, AX
 
+	MOV AH, 0x04
 	MOV SI, COMMAND_PARSED + 1
-	MOV DI, DOS_SEGMENT
-	MOV ES, DI
-	MOV DI, CONVERTED_8_3
-	CALL CONVERT_TO_8_3
+	MOV DI, ENTRY_BUFFER
+	INT 0x80
 
 	MOV AH, 0x01
-	MOV SI, CONVERTED_8_3
-	MOV CX, 11
+	MOV SI, ENTRY_BUFFER
+	MOV CX, 32 
 	INT 0x80
 
 	XOR AH, AH
@@ -217,8 +215,8 @@ REBOOT:
 ; PROCEDURES
 ; ----------
 
-; SI <- Filename to convert.
-; ES:DI <- Pointer to where to store the string.
+; ES:SI <- Filename to convert.
+; DI <- Pointer to where to store the string.
 ;
 ; CF -> Cleared if successful.
 CONVERT_TO_8_3:
@@ -229,28 +227,30 @@ CONVERT_TO_8_3:
 	MOV CX, 11
 	CALL MEMSET
 
+	CLC
 	MOV CX, 8
 
 .LOOP:
-	MOV AL, BYTE[SI]
+	MOV AL, BYTE[ES:SI]
 	INC SI
-
-	DEC CX
-
-	CMP AL, 0
-	JZ .OUT
 
 	CMP AL, '.'
 	JE .DOT
 
-	MOV BYTE[ES:DI], AL
-	INC DI
+	CMP AL, 0x00
+	JE .OUT
 
-	TEST CX, CX
-	JNZ .LOOP
+	CMP CX, 0
+	JNZ .STORE_BYTE
 
 	STC
 	JMP .OUT
+
+.STORE_BYTE:
+	MOV BYTE[DI], AL
+	INC DI
+	DEC CX
+	JMP .LOOP
 
 .DOT:
 	MOV DI, BX
@@ -702,61 +702,47 @@ PRINTI_INT:
 
 ; AH = 0x04
 ; SI = Pointer to filename.
-; ES:DI = Pointer to a buffer where the entry will be stored (reserve 32 bytes for the buffer).
+; ES:BX = Pointer to a buffer where the entry will be stored (reserve 32 bytes for the buffer).
 ;
 ; AL -> Status code.
 ; AL = 0x00 (File found)
 ; AL = 0x01 (File not found)
 GETENTRY_INT:
-	PUSH FS
 	PUSH ES
-	PUSH DI
 	PUSH DS
 
-	MOV BX, DOS_SEGMENT
-	MOV ES, BX
+	MOV AX, DOS_SEGMENT
+	MOV DX, DS
+	MOV ES, DX
+	MOV DS, AX
 	MOV DI, CONVERTED_8_3
 	CALL CONVERT_TO_8_3
+	JC .ERROR
 
-	MOV DS, BX
-
+	MOV AH, 0x01
 	MOV SI, CONVERTED_8_3
+	MOV CX, 11
+	INT 0x80
 
-	XOR BX, BX
-	MOV ES, BX
+	XOR AX, AX
+	MOV ES, AX
 	MOV BX, WORD[CURRENT_DIRECTORY]
 
-.FIND_LOOP:
+.FIND_ENTRY:
 	CMP BYTE[ES:BX], 0x00
-	JZ .OUT
+	JZ .ERROR
 
 	CALL FILENAMECMP
 	JE .OUT
 
 	ADD BX, 32
-	JMP .FIND_LOOP
+	JMP .FIND_ENTRY
 
 .ERROR:
-	MOV BYTE[INT_RET_CODE], 0x01
-	POP DS
-	POP DI
-	POP ES
-	JMP RET_CODE_INT
 
 .OUT:
 	POP DS
-	POP DI
-
-	MOV SI, BX
-
-	POP FS
-	CALL MEMFCPY
-
-	MOV AX, FS
-	MOV ES, AX
-
-	POP FS
-
+	POP ES
 	JMP RET_CODE_INT
 
 RET_CODE_INT:
@@ -805,6 +791,8 @@ COMMAND_NOT_FOUND_MSG_END:
 
 COMMAND: TIMES 64 DB 0
 COMMAND_PARSED: TIMES 64 DB 0
+
+ENTRY_BUFFER: TIMES 32 DB 0
 
 CONVERTED_8_3: TIMES 11 DB ' '
 
