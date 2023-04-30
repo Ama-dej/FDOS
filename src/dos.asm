@@ -510,6 +510,50 @@ MEMFCPY:
 	POP AX
 	RET
 
+; AX <- Ending cluster.
+; CX <- Number of clusters to allocate.
+ALLOCATE_CLUSTERS:
+	PUSH ES
+	PUSH BX
+	PUSH CX
+
+	MOV BX, FILESYSTEM >> 4
+	MOV ES, BX
+	XOR BX, BX
+
+.LOOP:
+
+
+
+	POP CX
+	POP BX
+	POP ES
+	RET
+
+; AX <- Current cluster.
+; CL <- Number of sectors to write.
+; DX <- Offset inside cluster.
+; ES:BX <- Source buffer.
+WRITE_CLUSTER:
+	PUSHA
+
+	SUB AX, 2
+	MOVZX DI, BYTE[SECTORS_PER_CLUSTER]
+	MUL DI 
+
+	ADD AX, WORD[DATA_AREA_BEGIN]
+	ADD AX, DX
+	MOV DL, BYTE[DRIVE_NUMBER]
+	CALL WRITE_DISK
+
+	MOVZX AX, CL
+	MUL WORD[BYTES_PER_SECTOR]
+
+	ADD BX, AX
+
+	POPA
+	RET
+
 ; AX <- Current cluster.
 ; CL <- Number of sectors to read.
 ; DX <- Offset inside cluster.
@@ -522,8 +566,7 @@ READ_CLUSTER:
 	MUL DI 
 
 	ADD AX, WORD[DATA_AREA_BEGIN]
-	ADD AX, DX ;
-	; MOV CL, BYTE[SECTORS_PER_CLUSTER]
+	ADD AX, DX
 	MOV DL, BYTE[DRIVE_NUMBER]
 	CALL READ_DISK
 
@@ -835,7 +878,7 @@ GETENTRY_INT_BUFFER: TIMES 11 DB ' '
 
 ; AH = 0x05
 ; ES:BX = Destination buffer.
-; SI = File entry.
+; SI = Pointer to file entry.
 ; CX = Number of sectors to read.
 ; DX = Starting sector.
 READFILE_INT:
@@ -883,6 +926,80 @@ READFILE_INT:
 
 	CMP AX, 0xFF8
 	JL .READ_LOOP
+
+.OUT:
+	POP DS
+	JMP RET_CODE_INT
+
+; AH = 0x06
+; ES:BX = Buffer to write.
+; SI = Pointer to file entry.
+; CX = Number of sectors to write.
+; DX = Starting sector.
+WRITEFILE_INT:
+	PUSH DS
+
+	MOV AX, WORD[SI + 26]
+
+	MOV SI, DOS_SEGMENT
+	MOV DS, SI
+
+	MOVZX DI, BYTE[SECTORS_PER_CLUSTER]
+
+.GET_TO_STARTING_SECTOR:
+	CMP DX, DI
+	JL .WRITE_LOOP
+
+	CMP AX, 0xFF8
+	JGE .OUT
+
+	CALL GET_NEXT_CLUSTER
+
+	SUB DX, DI
+	JMP .GET_TO_STARTING_SECTOR
+
+.WRITE_LOOP:
+	XOR DX, DX
+
+	PUSH AX
+	CALL GET_NEXT_CLUSTER
+	CMP AX, 0xFF8
+	JL .NO_ALLOCATE
+
+	MOV SI, CX
+	MOV AX, CX
+
+	DIV DI
+	MOV CX, AX
+
+	XOR DX, DX
+
+	POP AX
+
+	CALL ALLOCATE_CLUSTERS
+	MOV CX, SI
+
+	JMP .ALLOCATED
+
+.NO_ALLOCATE:
+	POP SI ; Discard the previous sector.
+
+.ALLOCATED:
+	PUSH CX
+
+	CMP CX, DI
+	JGE .NORMAL_WRITE
+
+	MOV DL, CL
+
+.NORMAL_WRITE:
+	MOV CL, BYTE[SECTORS_PER_CLUSTER]
+	SUB CL, DL
+	CALL WRITE_CLUSTER
+	POP CX
+
+	SUB CX, DI
+	JG .WRITE_LOOP
 
 .OUT:
 	POP DS
