@@ -668,32 +668,56 @@ GET_NEXT_CLUSTER:
 	RET
 
 ; AX <- LBA value.
-; CL <- Number of sectors to read.
+; CL <- Number of sectors to write.
 ; DL <- Drive number.
 ; ES:BX <- Pointer to buffer.
 WRITE_DISK:
 	PUSHA
-	PUSH CX
+
+	MOVZX DI, CL
+	MOV SI, 4
+
+	PUSH DI
+	PUSH BX
+
+.RETRY:
+	POP BX
+	POP DI
+	PUSH DI
+	PUSH BX
+
+	STC
+	DEC SI
+	JZ .RETURN
+
+.READ_LOOP:
 	CALL LBA_TO_CHS
-	POP AX 
+	CALL WRITE_CHS
+	JC .RETRY
 
-	MOV AH, 0x03
-	MOV DI, 3 
-
-.WRITE_LOOP:
-	STC
-	PUSH AX
-	INT 0x13
-	POP AX
-	JNC .RETURN
-
+	ADD BX, 512
+	INC AX
 	DEC DI
-	JNZ SHORT .WRITE_LOOP
-
-	STC
+	JNZ .READ_LOOP
 
 .RETURN:
+	POP BX
+	POP DI
 	POPA
+	RET
+
+; ES:BX <- Pointer to buffer to be written.
+; CX[0:5] <- Sector number.
+; CX[6:15] <- Track/Cylinder.
+; DH <- Head number.
+; DL <- Drive number.
+WRITE_CHS:
+	STC
+	PUSH AX
+	MOV AH, 0x03
+	MOV AL, 1
+	INT 0x13
+	POP AX
 	RET
 
 ; AX <- LBA value.
@@ -702,27 +726,51 @@ WRITE_DISK:
 ; ES:BX <- Pointer to buffer.
 READ_DISK:
 	PUSHA
-	PUSH CX
-	CALL LBA_TO_CHS
-	POP AX 
 
-	MOV AH, 0x02
-	MOV DI, 3 
+	MOVZX DI, CL
+	MOV SI, 4
+
+	PUSH DI
+	PUSH BX
+
+.RETRY:
+	POP BX
+	POP DI
+	PUSH DI
+	PUSH BX
+
+	STC
+	DEC SI
+	JZ .RETURN
 
 .READ_LOOP:
-	STC
-	PUSH AX
-	INT 0x13
-	POP AX
-	JNC .RETURN
+	CALL LBA_TO_CHS
+	CALL READ_CHS
+	JC .RETRY
 
+	ADD BX, 512
+	INC AX
 	DEC DI
-	JNZ SHORT .READ_LOOP
-
-	STC
+	JNZ .READ_LOOP
 
 .RETURN:
+	POP BX
+	POP DI
 	POPA
+	RET
+
+; ES:BX <- Pointer to target buffer.
+; CX[0:5] <- Sector number.
+; CX[6:15] <- Track/Cylinder.
+; DH <- Head number.
+; DL <- Drive number.
+READ_CHS:
+	STC
+	PUSH AX
+	MOV AH, 0x02
+	MOV AL, 1
+	INT 0x13
+	POP AX
 	RET
 
 ; AX <- LBA value.
