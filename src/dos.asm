@@ -18,16 +18,20 @@
 	MOV WORD[ES:BX], DOS_INT
 	MOV WORD[ES:BX + 2], DS
 
+	MOV DS, AX
+
 	MOV SI, 0x7C00
 	MOV AX, DOS_SEGMENT
-	MOV FS, AX
+	MOV ES, AX
 	MOV DI, BPB 
 	MOV CX, 62
-	CALL MEMFCPY
+	CALL MEMCPY
+
+	MOV DS, AX
 
 	MOV AH, 0x01
 	MOV SI, DOS_STARTUP_MSG
-	MOV CX, DOS_STARTUP_MSG_END - DOS_STARTUP_MSG - 1 
+	MOV CX, DOS_STARTUP_MSG_END - DOS_STARTUP_MSG
 	INT 0x80
 
 DOS_START:
@@ -118,8 +122,8 @@ LOAD_BINARY:
 	MOV BX, ENTRY_BUFFER
 	INT 0x80
 
-	CMP AL, 0x01
-	JE NOT_FOUND
+	TEST AL, AL
+	JZ NOT_FOUND
 
 	MOV DI, 0x2000
 	MOV ES, DI
@@ -127,7 +131,7 @@ LOAD_BINARY:
 
 	MOV AH, 0x05
 	MOV SI, ENTRY_BUFFER
-	MOV CX, 128
+	XOR CX, CX
 	XOR DX, DX
 	INT 0x80
 
@@ -234,11 +238,11 @@ REBOOT:
 	JMP 0xFFFF:0x0000
 
 TEST:
-	CALL GET_FREE_CLUSTER
-
-	MOV DX, AX
+	MOVZX DX, BYTE[SECTORS_PER_CLUSTER]
 	MOV AH, 0x03
 	INT 0x80
+
+	CALL NLCR
 
 	XOR AH, AH
 	INT 0x80
@@ -498,20 +502,18 @@ MEMSET:
 	POP BX
 	RET
 
-; ES:SI <- Source buffer.
-; FS:DI <- Destination buffer.
+; SI <- Source buffer.
+; ES:DI <- Destination buffer.
 ; CX <- Number of bytes to copy.
-MEMFCPY:
+MEMCPY:
 	PUSH AX
 	PUSH CX
 	PUSH SI
 	PUSH DI
 
 .LOOP:
-	MOV AL, BYTE[ES:SI]
-	MOV BYTE[FS:DI], AL
-	INC SI
-	INC DI
+	LODSB
+	STOSB
 	LOOP .LOOP
 
 	POP DI
@@ -545,18 +547,17 @@ WRITE_CLUSTER:
 	RET
 
 ; AX <- Current cluster.
-; CL <- Number of sectors to read.
-; DX <- Offset inside cluster.
 ; ES:BX <- Destination buffer.
 READ_CLUSTER:
-	PUSHA
+	PUSH AX
+	PUSH CX
+	PUSH DX
 
 	SUB AX, 2
-	MOVZX DI, BYTE[SECTORS_PER_CLUSTER]
-	MUL DI 
+	MOVZX CX, BYTE[SECTORS_PER_CLUSTER]
+	MUL CX 
 
 	ADD AX, WORD[DATA_AREA_BEGIN]
-	ADD AX, DX
 	MOV DL, BYTE[DRIVE_NUMBER]
 	CALL READ_DISK
 
@@ -565,7 +566,9 @@ READ_CLUSTER:
 
 	ADD BX, AX
 
-	POPA
+	POP DX
+	POP CX
+	POP AX
 	RET
 
 ; AX -> Free cluster location.
@@ -848,13 +851,10 @@ PRINTI_INT:
 ; SI = Pointer to filename.
 ; ES:BX = Pointer to a buffer where the entry will be stored (reserve 32 bytes for the buffer).
 ;
-; AL -> Status code.
-; AL = 0x00 (File found)
-; AL = 0x01 (File not found)
+; AL -> Sectors per cluster.
+; AL = 0x00 (File not found)
 GETENTRY_INT:
 	PUSH DS
-	PUSH FS
-	PUSH ES
 	PUSH ES
 
 	MOV AX, DOS_SEGMENT
@@ -883,22 +883,23 @@ GETENTRY_INT:
 	JMP .FIND_ENTRY
 
 .ERROR:
-	MOV BYTE[INT_RET_CODE], 0x01
 	POP ES
-	POP ES
-	POP FS
 	POP DS
 	JMP RET_CODE_INT
 
 .OUT:
+	MOV AL, BYTE[SECTORS_PER_CLUSTER]
+	MOV BYTE[INT_RET_CODE], AL
+
+	XOR AX, AX
+	MOV DS, AX
+
 	MOV SI, BX
 
-	POP FS
-	MOV CX, 32
-	CALL MEMFCPY
-
 	POP ES
-	POP FS
+	MOV CX, 32
+	CALL MEMCPY
+
 	POP DS
 	JMP RET_CODE_INT
 
@@ -907,8 +908,8 @@ GETENTRY_INT_BUFFER: TIMES 11 DB ' '
 ; AH = 0x05
 ; ES:BX = Destination buffer.
 ; SI = Pointer to file entry.
-; CX = Number of sectors to read.
-; DX = Starting sector.
+; CX = Number of clusters to read.
+; DX = Starting cluster.
 READFILE_INT:
 	PUSH DS
 
@@ -917,40 +918,24 @@ READFILE_INT:
 	MOV SI, DOS_SEGMENT
 	MOV DS, SI
 
-	MOVZX DI, BYTE[SECTORS_PER_CLUSTER]
-
 .GET_TO_STARTING_SECTOR:
 	CMP AX, 0xFF8
 	JGE .OUT
 
-	CMP DX, DI
-	JL .READ_LOOP
+	TEST DX, DX
+	JZ .READ_LOOP
 
 	CALL GET_NEXT_CLUSTER
 
-	SUB DX, DI
+	DEC DX
 	JMP .GET_TO_STARTING_SECTOR
 
 .READ_LOOP:
-	PUSH CX
-
-	CMP CX, DI
-	JGE .NORMAL_READ
-
-	MOV DL, CL
-
-.NORMAL_READ:
-	MOV CL, BYTE[SECTORS_PER_CLUSTER]
-	SUB CL, DL
 	CALL READ_CLUSTER
-	POP CX
-
 	CALL GET_NEXT_CLUSTER
 
-	XOR DX, DX
-
-	SUB CX, DI
-	JLE .OUT
+	DEC CX
+	JZ .OUT
 
 	CMP AX, 0xFF8
 	JL .READ_LOOP
@@ -1074,7 +1059,7 @@ REBOOT_ADDRESS: DW REBOOT
 TEST_ADDRESS: DW TEST
 COMMAND_ADDRESS_LIST_END:
 
-DOS_STARTUP_MSG: DB "This is FDOS version I.", 0x0A, 0x0D, 0x00
+DOS_STARTUP_MSG: DB "This is FDOS version I.", 0x0A, 0x0D
 DOS_STARTUP_MSG_END:
 
 COMMAND_NOT_FOUND_MSG: DB "Command not found.", 0x0A, 0x0D
