@@ -81,6 +81,7 @@ PARSE_COMMAND:
 
 .STORE:
 	MOV AL, BYTE[SI]
+	CALL TO_UPPER
 	STOSB
 	INC SI
 	LOOP PARSE_COMMAND
@@ -139,9 +140,6 @@ LOAD_BINARY:
 	MOV ES, DI
 
 	JMP 0x2000:0x0000
-
-	XOR AH, AH
-	INT 0x80
 
 NOT_FOUND:
 	MOV AH, 0x01
@@ -238,7 +236,9 @@ REBOOT:
 	JMP 0xFFFF:0x0000
 
 TEST:
-	MOVZX DX, BYTE[SECTORS_PER_CLUSTER]
+	CALL GET_FREE_CLUSTER
+
+	MOV DX, AX
 	MOV AH, 0x03
 	INT 0x80
 
@@ -249,6 +249,21 @@ TEST:
 
 ; PROCEDURES
 ; ----------
+
+; AL <- Character.
+;
+; AL -> Character converted to uppercase.
+TO_UPPER:
+	CMP AL, 'a'
+	JL .OUT
+
+	CMP AL, 'z'
+	JG .OUT
+
+	SUB AL, 32
+
+.OUT:
+	RET
 
 STORE_FAT:
 	PUSHA
@@ -272,8 +287,8 @@ STORE_FAT:
 	POPA
 	RET
 
-; ES:SI <- Filename to convert.
-; DI <- Pointer to where to store the string.
+; SI <- Filename to convert.
+; ES:DI <- Pointer to where to store the string.
 ;
 ; CF -> Cleared if successful.
 CONVERT_TO_8_3:
@@ -288,8 +303,7 @@ CONVERT_TO_8_3:
 	MOV CX, 8
 
 .LOOP:
-	MOV AL, BYTE[ES:SI]
-	INC SI
+	LODSB
 
 	CMP AL, '.'
 	JE .DOT
@@ -304,8 +318,7 @@ CONVERT_TO_8_3:
 	JMP .OUT
 
 .STORE_BYTE:
-	MOV BYTE[DI], AL
-	INC DI
+	STOSB
 	DEC CX
 	JMP .LOOP
 
@@ -453,6 +466,29 @@ PRINT_FILENAME:
 	POP BX
 	POP AX
 	RET
+
+; ES:BX <- Start of directory.
+; SI <- File name to find.
+;
+; CF -> Set if not found.
+FIND_ENTRY:
+	CLC
+
+.LOOP:
+	CMP BYTE[ES:BX], 0
+	JZ .ERROR
+
+	CALL FILENAMECMP
+	JE .OUT
+
+	ADD BX, 32
+	JMP .LOOP
+
+.ERROR:
+	STC
+
+.OUT:
+	RET	
 
 ; ES:BX <- File name in directory entry.
 ; SI <- File name to compare to.
@@ -930,40 +966,26 @@ PRINTI_INT:
 ; ES:BX = Pointer to a buffer where the entry will be stored (reserve 32 bytes for the buffer).
 ;
 ; AL -> Sectors per cluster.
-; AL = 0x00 (File not found)
+; AL -> 0x00 (File not found)
 GETENTRY_INT:
 	PUSH DS
 	PUSH ES
 
 	MOV AX, DOS_SEGMENT
-	MOV DX, DS
-	MOV ES, DX
-	MOV DS, AX
+	MOV ES, AX
 	MOV DI, GETENTRY_INT_BUFFER
 	CALL CONVERT_TO_8_3
+	JC .ERROR
 
-	MOV DI, BX
-
+	MOV DS, AX
 	MOV SI, GETENTRY_INT_BUFFER
+	MOV DI, BX
 
 	XOR BX, BX
 	MOV ES, BX
 	MOV BX, WORD[CURRENT_DIRECTORY]
-
-.FIND_ENTRY:
-	CMP BYTE[ES:BX], 0x00
-	JZ .ERROR
-
-	CALL FILENAMECMP
-	JE .OUT
-
-	ADD BX, 32
-	JMP .FIND_ENTRY
-
-.ERROR:
-	POP ES
-	POP DS
-	JMP RET_CODE_INT
+	CALL FIND_ENTRY
+	JC .ERROR
 
 .OUT:
 	MOV AL, BYTE[SECTORS_PER_CLUSTER]
@@ -978,6 +1000,11 @@ GETENTRY_INT:
 	MOV CX, 32
 	CALL MEMCPY
 
+	POP DS
+	JMP RET_CODE_INT
+
+.ERROR:
+	POP ES
 	POP DS
 	JMP RET_CODE_INT
 
@@ -1028,53 +1055,9 @@ READFILE_INT:
 ; CX = Number of clusters to write.
 ; DX = Starting cluster.
 WRITEFILE_INT:
-	PUSH DS
-
-	MOV AX, WORD[SI + 26]
-
-	MOV SI, DOS_SEGMENT
-	MOV DS, SI
-
-.GET_TO_STARTING_CLUSTER:
-	TEST DX, DX
-	JZ .WRITE_LOOP
-
-	CMP AX, 0xFF8
-	JGE .OUT
-
-	CALL GET_NEXT_CLUSTER
-
-	DEC DX
-	JMP .GET_TO_STARTING_CLUSTER
-
-.WRITE_LOOP:
-	MOV DI, AX
-	CALL GET_NEXT_CLUSTER
-	CMP AX, 0xFF8
-	JLE .OK
-
-	CALL GET_FREE_CLUSTER
-
-	MOV AX, DI
-	MOV DX, AX
-	CALL WRITE_CLUSTER
-
-	MOV AX, DX
-	MOV DX, 0xFFF
-	CALL WRITE_CLUSTER
-	
-.OK:
-	MOV AX, DI
-
-	CALL WRITE_DATA
-	CALL GET_NEXT_CLUSTER
-
-	DEC CX
-	JG .WRITE_LOOP
-
-.OUT:
-	POP DS
-	JMP RET_CODE_INT
+; TODO: Napiš to.
+; prever če je prazna datoteka, če je pravilno posodobi entry (nastavi prvo gručo, velikost datoteke)
+; če je naslednja gruča 0xFFF, potem najd prosto gručo in nastavi na najdeno prosto.
 
 RET_CODE_INT:
 	POPA
@@ -1100,15 +1083,14 @@ SCAN_INT_ADDRESS: DW SCAN_INT
 PRINTI_INT_ADDRESS: DW PRINTI_INT
 GETENTRY_INT_ADDRESS: DW GETENTRY_INT
 READFILE_INT_ADDRESS: DW READFILE_INT
-WRITEFILE_INT_ADDRESS: DW WRITEFILE_INT
 RETURN_FROM_INT_ADDRESS: TIMES 256 - ((RETURN_FROM_INT_ADDRESS - INT_JUMP_TABLE) / 2) DW RET_INT
 INT_JUMP_TABLE_END:
 
 COMMAND_LIST:
-CLS_COMMAND: DB "cls", 0x00
-DIR_COMMAND: DB "dir", 0x00
-REBOOT_COMMAND: DB "reboot", 0x00
-TEST_COMMAND: DB "test", 0x00
+CLS_COMMAND: DB "CLS", 0x00
+DIR_COMMAND: DB "DIR", 0x00
+REBOOT_COMMAND: DB "REBOOT", 0x00
+TEST_COMMAND: DB "TEST", 0x00
 COMMAND_LIST_END: DB 0xFF
 
 COMMAND_ADDRESS_LIST:
@@ -1134,6 +1116,7 @@ ENTRY_BUFFER: TIMES 32 DB 0
 
 CONVERTED_8_3: TIMES 11 DB ' '
 
+; CURRENT_DIRECTORY_FIRST_SECTOR: DW 0
 CURRENT_DIRECTORY: DW 0
 DATA_AREA_BEGIN: DW 0
 
