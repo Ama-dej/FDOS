@@ -1,0 +1,15 @@
+[ORG 0x0000]
+
+	MOV AH, 0x01
+	MOV SI, MSG
+	MOV CX, MSG_END - MSG
+	INT 0x80
+
+	MOV AH, 0x00
+	INT 0x80
+
+TIMES 512 * 125 DB 0
+DB 0
+
+MSG: DB "Hello.", 0x0A, 0x0D
+MSG_END:
