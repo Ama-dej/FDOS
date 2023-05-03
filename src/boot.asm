@@ -148,8 +148,6 @@ ODD_CLUSTER:
 
 	JMP DOS_SEGMENT:DOS_OFFSET
 
-	JMP HALT
-
 ERROR:
 	MOV SI, ERROR_MSG ; Print the error message.
 	CALL PUTS
@@ -164,10 +162,6 @@ ERROR:
 	INT 0x16 ; Wait for a key to be pressed.
 
 	JMP 0xFFFF:0x0000 ; Reboot.
-
-HALT:
-	HLT
-	JMP HALT
 
 ; AX <- LBA value.
 ; CL <- Number of sectors to read.
