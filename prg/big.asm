@@ -8,7 +8,7 @@
 	MOV AH, 0x00
 	INT 0x80
 
-TIMES 512 * 125 DB 0
+TIMES 512 * 127 DB 0
 DB 0
 
 MSG: DB "Hello.", 0x0A, 0x0D

@@ -170,6 +170,60 @@ HALT:
 	JMP HALT
 
 ; AX <- LBA value.
+; CL <- Number of sectors to read.
+; DL <- Drive number.
+; ES:BX <- Pointer to buffer.
+READ_DISK:
+	PUSHA
+	PUSH ES
+
+	MOVZX DI, CL
+
+.READ_LOOP:
+	CALL LBA_TO_CHS
+	CALL READ_CHS
+	JC .RETURN
+
+	MOV SI, ES
+	ADD SI, 32
+	MOV ES, SI
+
+	INC AX
+	DEC DI
+	JNZ .READ_LOOP
+
+.RETURN:
+	POP ES
+	POPA
+	RET
+
+; ES:BX <- Pointer to target buffer.
+; CX[0:5] <- Sector number.
+; CX[6:15] <- Track/Cylinder.
+; DH <- Head number.
+; DL <- Drive number.
+READ_CHS:
+	PUSH DI
+	MOV DI, 3
+
+.READ_LOOP:
+	STC
+	PUSH AX
+	MOV AH, 0x02
+	MOV AL, 1
+	INT 0x13
+	POP AX
+	JNC .OUT
+
+	DEC DI
+	JNZ .READ_LOOP
+	STC
+
+.OUT:
+	POP DI
+	RET
+
+; AX <- LBA value.
 ;
 ; CX[0:5] -> Sector number.
 ; CX[6:15] -> Track/Cylinder.
@@ -195,58 +249,6 @@ LBA_TO_CHS:
 	POP DX
 	MOV DH, AL
 	POP AX
-	RET
-
-; ES:BX <- Pointer to target buffer.
-; CX[0:5] <- Sector number.
-; CX[6:15] <- Track/Cylinder.
-; DH <- Head number.
-; DL <- Drive number.
-READ_CHS:
-	STC
-	PUSH AX
-	MOV AH, 0x02
-	MOV AL, 1
-	INT 0x13
-	POP AX
-	RET
-
-; AX <- LBA value.
-; CL <- Number of sectors to read.
-; DL <- Drive number.
-; ES:BX <- Pointer to buffer.
-READ_DISK:
-	PUSHA
-
-	MOVZX DI, CL
-	MOV SI, 4
-
-	PUSH DI
-	PUSH BX
-
-.RETRY:
-	POP BX
-	POP DI
-	PUSH DI
-	PUSH BX
-
-	DEC SI
-	JZ ERROR
-
-.READ_LOOP:
-	CALL LBA_TO_CHS
-	CALL READ_CHS
-	JC .RETRY
-
-	ADD BX, 512
-	INC AX
-	DEC DI
-	JNZ .READ_LOOP
-
-.RETURN:
-	POP BX
-	POP DI
-	POPA
 	RET
 
 ; SI <- Pointer to string.
