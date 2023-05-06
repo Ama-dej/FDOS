@@ -36,7 +36,9 @@
 
 DOS_START:
 	MOV AL, 0x00
-	MOV BX, COMMAND
+	MOV DI, DOS_SEGMENT
+	MOV ES, DI
+	MOV DI, COMMAND
 	MOV CX, 128
 	CALL MEMSET
 
@@ -331,9 +333,10 @@ CONVERT_TO_8_3:
 	PUSHA
 
 	MOV AL, ' '
-	MOV BX, DI
 	MOV CX, 11
 	CALL MEMSET
+	
+	MOV BX, DI
 
 	CLC
 	MOV CX, 8
@@ -556,22 +559,22 @@ FILENAMECMP:
 	RET
 
 ; AL <- Value to set to.
-; BX <- Pointer to buffer.
+; ES:DI <- Pointer to buffer.
 ; CX <- Number of bytes to set.
 MEMSET:
-	PUSH BX
 	PUSH CX
+	PUSH DI
 
 .LOOP:
 	TEST CX, CX
 	JZ .OUT
-	MOV BYTE[BX], AL
-	INC BX
+	MOV BYTE[ES:DI], AL
+	INC DI 
 	LOOP .LOOP
 
 .OUT:
+	POP DI
 	POP CX
-	POP BX
 	RET
 
 ; SI <- Source buffer.

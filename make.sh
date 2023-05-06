@@ -16,4 +16,4 @@ dd if=bin/boot.bin of=img/floppy1440.img conv=notrunc
 mcopy -i img/floppy1440.img bin/dos.bin "::DOS.SYS"
 
 mcopy -i img/floppy1440.img bin/big.bin "::big.bin"
-mcopy -i img/floppy1440.img bin/snake.bin "::snake.bin"
+mcopy -i img/floppy1440.img bin/snake.bin "::snakeeee.bin"
