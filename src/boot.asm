@@ -69,6 +69,8 @@ READ_FAT_LOOP: ; In case the first fat table is broken try to load the redundant
 	CALL READ_DISK
 	JNC .OK
 
+	ADD AX, CX
+
 	DEC DH
 	JZ ERROR
 	JMP READ_FAT_LOOP
