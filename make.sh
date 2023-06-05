@@ -13,15 +13,15 @@ nasm -f bin prg/test.asm -o bin/test.bin
 nasm -f bin prg/readfile.asm -o bin/readfile.bin
 
 dd if=/dev/zero of=img/floppy1440.img count=2880 bs=512
-mkfs.fat -F 12 -s 2 img/floppy1440.img
+mkfs.fat -F 12 -i FFDD0055 -n FDOS img/floppy1440.img
 
 dd if=bin/boot.bin of=img/floppy1440.img conv=notrunc
 mcopy -i img/floppy1440.img bin/dos.bin "::DOS.SYS"
 
-mcopy -i img/floppy1440.img bin/tetris.bin "::tetris.bin"
-mcopy -i img/floppy1440.img bin/big.bin "::big.bin"
-mcopy -i img/floppy1440.img bin/test.bin "::test.bin"
-mcopy -i img/floppy1440.img bin/snake.bin "::snake.bin"
-mcopy -i img/floppy1440.img bin/readfile.bin "::readfile.bin"
-# mcopy -i img/floppy1440.img bin/snake.bin "::test.txt"
-mcopy -i img/floppy1440.img nc.txt "::test.txt"
+mcopy -i img/floppy1440.img bin/tetris.bin "::TETRIS.BIN"
+mcopy -i img/floppy1440.img bin/big.bin "::BIG.BIN"
+mcopy -i img/floppy1440.img bin/test.bin "::TEST.BIN"
+mcopy -i img/floppy1440.img bin/snake.bin "::SNAKE.BIN"
+mcopy -i img/floppy1440.img bin/readfile.bin "::READFILE.BIN"
+# mcopy -i img/floppy1440.img bin/snake.bin "::TEST.TXT"
+mcopy -i img/floppy1440.img prg/test.txt "::TEST.TXT"
