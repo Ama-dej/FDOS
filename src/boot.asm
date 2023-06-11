@@ -109,9 +109,6 @@ READ_FAT_LOOP: ; In case the first fat table is broken try to load the redundant
 	MOV AX, WORD[EXPLORER_FIRST_SECTOR]
 	MOV BX, DOS_OFFSET 
 
-	MOV SI, LOADING_MSG
-	CALL PUTS
-
 READ_DOS:
 	PUSH AX
 

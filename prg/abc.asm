@@ -1,0 +1,13 @@
+[BITS 16]
+[ORG 0x0000]
+
+	MOV AH, 0x01
+	MOV SI, DATA
+	MOV CX, DATA_END - DATA
+	INT 0x80
+
+	MOV AH, 0x00
+	INT 0x80
+
+DATA: DB "abcdefghijklmno"
+DATA_END:
