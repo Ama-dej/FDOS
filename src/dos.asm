@@ -1004,12 +1004,12 @@ DOS_INT:
 	MOVZX BX, AH
 	SHL BX, 1
 	ADD BX, INT_JUMP_TABLE
-	MOV DI, WORD[BX]
+	MOV AX, WORD[BX]
 
 	POP DS
 	POP BX
 
-	JMP DI
+	JMP AX 
 
 ; AH = 0x00
 ; Returns from the program to 16-DOS.
