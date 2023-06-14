@@ -1,0 +1,11 @@
+[BITS 16]
+[ORG 0x0000]
+
+TIMES 1050 DB 0x90
+
+	MOV AH, 0x0E
+	MOV AL, 'b'
+	INT 0x10
+
+	MOV AH, 0x00
+	INT 0x80

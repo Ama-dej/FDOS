@@ -12,9 +12,10 @@ nasm -f bin prg/big.asm -o bin/big.bin
 nasm -f bin prg/test.asm -o bin/test.bin
 nasm -f bin prg/readfile.asm -o bin/readfile.bin
 nasm -f bin prg/abc.asm -o bin/abc.bin
+nasm -f bin prg/tobogan.asm -o bin/tobogan.bin
 
 dd if=/dev/zero of=img/floppy1440.img count=2880 bs=512
-mkfs.fat -F 12 -s 1 img/floppy1440.img
+mkfs.fat -F 12 img/floppy1440.img
 # dd if=/dev/zero of=img/floppy720.img count=1440 bs=512
 # mkfs.fat -F 12 img/floppy720.img
 
@@ -35,3 +36,4 @@ mcopy -i img/floppy1440.img bin/snake.bin "::SNAKE.BIN"
 # mcopy -i img/floppy1440.img bin/readfile.bin "::READFILE.BIN"
 # mcopy -i img/floppy1440.img prg/test.txt "::TEST.TXT"
 mcopy -i img/floppy1440.img bin/abc.bin "::ABC.BIN"
+mcopy -i img/floppy1440.img bin/tobogan.bin "::TOBOGAN.BIN"
