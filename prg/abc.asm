@@ -11,4 +11,4 @@
 
 DATA: DB "abcdefghijklmno"
 DATA_END:
-TIMES 40 DB 'R'
+TIMES 1300 - ($ - $$) DB 'R'
