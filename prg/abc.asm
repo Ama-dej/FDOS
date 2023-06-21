@@ -11,4 +11,4 @@
 
 DATA: DB "abcdefghijklmno"
 DATA_END:
-TIMES 100 DB 'R'
+TIMES 40 DB 'R'

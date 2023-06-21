@@ -4,8 +4,8 @@
 	MOV AH, 0x05
 	MOV BX, BUFFER
 	MOV SI, FILENAME
-	MOV CX, 512
-	MOV DX, 0
+	MOV CX, 100
+	MOV DX, 30
 	MOV DI, 0
 	INT 0x80
 
@@ -21,5 +21,5 @@ BUFFER:
 	MOV AH, 0x00
 	INT 0x80
 
-	TIMES 1023 - ($ - $$) DB 'G'
+	TIMES 1024 - ($ - $$) DB 'G'
 BUFFER_END:
