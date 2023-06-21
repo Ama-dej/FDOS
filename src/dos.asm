@@ -1434,12 +1434,17 @@ WRITEFILE_INT:
 	MOV ES, BX
 	MOV BX, DATA_BUFFER
 
+	MOV SI, CX
+	ADD SI, DX
+	JC .OVERFLOW ; This is here in case CX is a really high value and would therefore break this algorithm (eg. 0xFFFF + 0x200 = 0x1FF, which is smaller than the amount of bytes per cluster).
+
 	PUSH CX
 	ADD CX, DX
 	CMP CX, WORD[BYTES_PER_CLUSTER]
 	POP CX
 	JB .READ_DATA
 
+.OVERFLOW:
 	MOV CX, WORD[BYTES_PER_CLUSTER]
 
 	CMP DX, 0
@@ -1487,12 +1492,15 @@ WRITEFILE_INT:
 	POP ES
 	POP CX
 
+	MOV SI, CX
 	ADD CX, DX
+	ADD SI, DX
+	JC .OVERFLOW_AGAIN
 
-	; CMP CX, WORD[BYTES_PER_CLUSTER] ; <- Najdi boljši način za to šalabajzarijo!!!!!1, ne
 	CMP CX, WORD[BYTES_PER_CLUSTER]
 	JBE .OUT
 
+.OVERFLOW_AGAIN:
 	SUB CX, WORD[BYTES_PER_CLUSTER]
 
 	MOV DI, WORD[BYTES_PER_CLUSTER]
@@ -1529,11 +1537,6 @@ WRITEFILE_INT:
 	JMP RET_CODE_INT
 
 .WRITE_ERROR:
-	PUSH AX
-	MOV AL, 'a'
-	CALL PUTCHAR
-	POP AX
-
 	CALL UPDATE_FS
 	MOV BYTE[INT_RET_CODE], 0x02
 	POP ES
