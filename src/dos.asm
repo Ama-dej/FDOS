@@ -936,6 +936,7 @@ LBA_TO_CHS:
 	POP AX
 	RET
 
+; Floppy drives sometimes spit out an error if you don't reset after fast consecutive read/writes.
 RESET_DISK:
 	PUSH AX
 	PUSH DX
@@ -946,33 +947,6 @@ RESET_DISK:
 
 	POP DX
 	POP AX
-	RET
-
-; Shitty procedure.
-; Never call this, used only as a workaround.
-UPDATE_FILE_SIZE:
-	PUSH ES
-
-	XOR SI, SI
-	MOV ES, SI
-	MOV SI, WORD[INT_TEMP]
-
-	MOV DX, WORD[FILE_SIZE_LOWER]
-	MOV DI, WORD[FILE_SIZE_UPPER]
-
-	CMP DI, WORD[ES:SI + 30]
-	JB .OUT
-	JA .STORE
-
-	CMP DX, WORD[ES:SI + 28]
-	JB .OUT
-
-.STORE:
-	MOV WORD[ES:SI + 30], DI
-	MOV WORD[ES:SI + 28], DX
-
-.OUT:
-	POP ES
 	RET
 
 ; AX <- Value.
