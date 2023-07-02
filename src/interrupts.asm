@@ -620,63 +620,6 @@ COMMAND_PARAMETERS_INT:
         POP ES
         JMP RET_INT
 
-; AH = 0x07
-; CX = Number of milliseconds to sleep.
-SLEEP_INT:
-        PUSH DS
-
-        CLI
-
-        XOR BX, BX
-        MOV DS, BX
-        MOV BX, 0x08 * 4
-
-	MOV DX, WORD[DS:BX] ; Save the default values set by the BIOS.
-	MOV DI, WORD[DS:BX + 2] ; Some BIOS interrupts get borked if you don't reset these values.
-
-        MOV WORD[DS:BX], PIT_SLEEP_INTERRUPT
-
-        MOV AX, DOS_SEGMENT
-        MOV WORD[DS:BX + 2], AX
-
-        MOV AL, 0b00110100
-        OUT 0x43, AL
-        MOV AL, 0xA9
-        OUT 0x40, AL
-        MOV AL, 0x04
-        OUT 0x40, AL
-        STI
-
-.WAIT:
-        TEST CX, CX
-        JZ .OUT
-        HLT
-        JMP .WAIT
-
-.OUT:
-        CLI
-        MOV AL, 0b00110100
-        OUT 0x43, AL
-        XOR AL, AL
-        OUT 0x40, AL
-        OUT 0x40, AL
-
-        XOR AX, AX
-        MOV DS, AX
-	MOV WORD[DS:BX], DX
-	MOV WORD[DS:BX + 2], DI
-        STI
-
-        POP DS
-        JMP RET_INT
-
-PIT_SLEEP_INTERRUPT:
-        DEC CX
-
-        MOV AL, 0x20
-        OUT 0x20, AL
-        IRET
-
 RET_WRITE_INT:
         PUSH ES
 
@@ -732,6 +675,5 @@ PRINTI_INT_ADDRESS: DW PRINTI_INT
 READFILE_INT_ADDRESS: DW READFILE_INT
 WRITEFILE_INT_ADDRESS: DW WRITEFILE_INT ; <- Zamenjaj z WRITEFILE_INT, ko bo prekinitev varna.
 COMMAND_PARAMETERS_INT_ADDRESS: DW COMMAND_PARAMETERS_INT
-SLEEP_INT_ADDRESS: DW SLEEP_INT
 RETURN_FROM_INT_ADDRESS: TIMES 256 - ((RETURN_FROM_INT_ADDRESS - INT_JUMP_TABLE) / 2) DW RET_INT
 INT_JUMP_TABLE_END:
