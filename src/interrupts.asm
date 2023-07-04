@@ -145,6 +145,8 @@ INT_FILENAME_BUFFER: TIMES 11 DB ' '
 ; DX/DI = Byte offset
 ; DX = Lower part of offset.
 ; DI = Higher part of offset.
+;
+; CX -> Number of bytes read.
 READFILE_INT:
         PUSH DS
         PUSH ES
@@ -168,6 +170,8 @@ READFILE_INT:
 
         MOV SI, DOS_SEGMENT
         MOV DS, SI
+
+	MOV WORD[IO_BYTES], 0
 
         MOV AX, WORD[ES:BX + 28]
         MOV WORD[FILE_SIZE_LOWER], AX
@@ -264,6 +268,8 @@ READFILE_INT:
         MOV DI, BX
         CALL MEMCPY
 
+	ADD WORD[IO_BYTES], CX
+
         POP DI
         POP CX
 
@@ -299,21 +305,18 @@ READFILE_INT:
 .OUT:
         POP ES
         POP DS
-        JMP RET_CODE_INT
+        JMP RW_RET_INT
 
 .NOT_FOUND:
         MOV BYTE[INT_RET_CODE], 0x01
         POP DS
-        JMP RET_CODE_INT
+        JMP RW_RET_INT
 
 .READ_ERROR:
         MOV BYTE[INT_RET_CODE], 0x02
         POP ES
         POP DS
-        JMP RET_CODE_INT
-
-FILE_SIZE_LOWER: DW 0
-FILE_SIZE_UPPER: DW 0
+        JMP RW_RET_INT
 
 ; AH = 0x05
 ; ES:BX = Buffer to write.
@@ -322,6 +325,8 @@ FILE_SIZE_UPPER: DW 0
 ; DX/DI = Byte offset
 ; DX = Lower part of offset.
 ; DI = Higher part of offset.
+;
+; CX -> Number of bytes written.
 WRITEFILE_INT:
         PUSH DS
         PUSH ES
@@ -345,6 +350,8 @@ WRITEFILE_INT:
 
         MOV SI, DOS_SEGMENT
         MOV DS, SI
+
+	MOV WORD[IO_BYTES], 0
 
         MOV AX, WORD[ES:BX + 28]
         MOV WORD[FILE_SIZE_LOWER], AX
@@ -372,13 +379,6 @@ WRITEFILE_INT:
         AND BX, 0x00FF
         ADD BX, 16
 
-        ; PUSHA
-        ; MOV AH, 0x03
-        ; MOV DX, CX
-        ; INT 0x80
-        ; CALL NLCR
-        ; POPA
-
         CMP DI, WORD[FILE_SIZE_UPPER]
         JA .WRITE_ERROR
         JB .CONTINUE
@@ -389,33 +389,6 @@ WRITEFILE_INT:
 .CONTINUE:
         MOV WORD[FILE_SIZE_LOWER], DX
         MOV WORD[FILE_SIZE_UPPER], DI
-
-        ; PUSH ES
-        ; PUSH DX
-        ; PUSH DI
-
-        ; XOR SI, SI
-        ; MOV ES, SI
-        ; MOV SI, WORD[INT_TEMP]
-
-        ; ADD DX, CX
-        ; ADC DI, 0
-
-        ; CMP DI, WORD[ES:SI + 30]
-        ; JB .POP
-        ; JA .STORE
-
-        ; CMP DX, WORD[ES:SI + 28]
-        ; JB .POP
-
-; .STORE:
-        ; MOV WORD[ES:SI + 30], DI
-        ; MOV WORD[ES:SI + 28], DX
-
-; .POP:
-        ; POP DI
-        ; POP DX
-        ; POP ES
 
         CALL RESET_DISK
 
@@ -541,6 +514,7 @@ WRITEFILE_INT:
 
         ADD WORD[FILE_SIZE_LOWER], CX
         ADC WORD[FILE_SIZE_UPPER], 0
+	ADD WORD[IO_BYTES], CX
 
         POP BX
         POP ES
@@ -646,7 +620,18 @@ RET_WRITE_INT:
 
         CALL UPDATE_FS
         POP DS
-        JMP RET_CODE_INT
+	JMP RW_RET_INT
+        ; JMP RET_CODE_INT
+
+RW_RET_INT:
+	POPA
+	PUSH DS
+	MOV CX, DOS_SEGMENT
+	MOV DS, CX
+	MOV AL, BYTE[INT_RET_CODE]
+	MOV CX, WORD[IO_BYTES]
+	POP DS
+	IRET
 
 RET_CODE_INT:
         POPA
@@ -666,6 +651,10 @@ RET_INT:
 INT_RET_CODE: DB 0
 INT_TEMP: DW 0
 INT_TEMP_JUNIOR: DW 0
+
+FILE_SIZE_LOWER: DW 0
+FILE_SIZE_UPPER: DW 0
+IO_BYTES: DW 0
 
 INT_JUMP_TABLE:
 EXIT_INT_ADDRESS: DW EXIT_INT
