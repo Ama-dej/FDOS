@@ -1,6 +1,26 @@
 ; PROCEDURES
 ; ----------
 
+; AL <- Character to find.
+; SI <- Where to search the char.
+;
+; CX -> Offset of the character in bytes.
+FINDCHAR:
+	PUSH SI
+
+.LOOP:
+	CMP BYTE[SI], AL
+	JE .OUT
+
+	INC SI
+	JMP .LOOP
+
+.OUT:
+	MOV CX, SI
+	POP SI
+	SUB CX, SI
+	RET
+
 ; AX <- First sector of the directory.
 LOAD_DIRECTORY:
 	PUSH ES
