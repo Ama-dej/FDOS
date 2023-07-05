@@ -1,6 +1,78 @@
 ; PROCEDURES
 ; ----------
 
+; AX <- First sector of the directory.
+LOAD_DIRECTORY:
+	PUSH ES
+	PUSH BX
+
+	XOR BX, BX
+	MOV ES, BX
+	MOV BX, WORD[CURRENT_DIRECTORY]
+
+	TEST AX, AX
+	JZ .ROOT_DIRECTORY
+
+	CALL READ_DATA
+	JMP .OUT
+
+.ROOT_DIRECTORY:
+	XOR DX, DX
+
+        MOVZX AX, BYTE[NUMBER_OF_FAT]
+        MUL WORD[SECTORS_PER_FAT]
+        ADD AX, WORD[RESERVED_SECTORS]
+
+        MOV DX, WORD[ROOT_ENTRIES]
+        ADD DX, 15
+        SHR DX, 4
+
+        MOV CL, DL
+        MOV DL, BYTE[DRIVE_NUMBER]
+
+        CALL READ_DISK
+
+.OUT:
+	POP BX
+	POP ES
+	RET
+
+; AX <- First sector of the directory.
+STORE_DIRECTORY:
+	PUSH ES
+	PUSH BX
+
+	XOR BX, BX
+	MOV ES, BX
+	MOV BX, WORD[CURRENT_DIRECTORY]
+
+	TEST AX, AX
+	JZ .ROOT_DIRECTORY
+
+	CALL WRITE_DATA
+	JMP .OUT
+
+.ROOT_DIRECTORY:
+        XOR DX, DX
+
+        MOVZX AX, BYTE[NUMBER_OF_FAT]
+        MUL WORD[SECTORS_PER_FAT]
+        ADD AX, WORD[RESERVED_SECTORS]
+
+        MOV DX, WORD[ROOT_ENTRIES]
+        ADD DX, 15
+        SHR DX, 4
+
+        MOV CL, DL
+        MOV DL, BYTE[DRIVE_NUMBER]
+
+        CALL WRITE_DISK
+
+.OUT:
+	POP BX
+	POP ES
+	RET
+
 ; Turns on the PC speaker.
 SPK_ON:
         PUSH AX
@@ -60,28 +132,13 @@ TO_UPPER:
         RET
 
 UPDATE_FS:
+	PUSH AX
         CALL STORE_FAT
 
-        XOR BX, BX
-        MOV ES, BX
-        MOV BX, WORD[CURRENT_DIRECTORY]
-
-        XOR DX, DX
-
-        MOVZX AX, BYTE[NUMBER_OF_FAT]
-        MUL WORD[SECTORS_PER_FAT]
-        ADD AX, WORD[RESERVED_SECTORS]
-
-        MOV DX, WORD[ROOT_ENTRIES]
-        ADD DX, 15
-        SHR DX, 4
-
-        MOV CL, DL
-        MOV DL, BYTE[DRIVE_NUMBER]
-
-        CALL WRITE_DISK
-
-        RET
+	MOV AX, WORD[CURRENT_DIRECTORY_FIRST_SECTOR]
+	CALL STORE_DIRECTORY
+	POP AX
+	RET
 
 STORE_FAT:
         PUSHA
@@ -120,6 +177,9 @@ CONVERT_TO_8_3:
         MOV CX, 11
         CALL MEMSET
 
+	CMP BYTE[SI], '.' ; If the first character is a dot it means it is one of those special entries.
+	JE .FIRST_DOT
+
         MOV BX, DI
 
         CLC
@@ -150,6 +210,17 @@ CONVERT_TO_8_3:
         ADD DI, 8
         MOV CX, 3
         JMP .LOOP
+
+.FIRST_DOT:
+	LODSB
+	STOSB
+
+	CMP BYTE[SI], '.'
+	CLC
+	JNE .OUT
+
+	LODSB
+	STOSB
 
 .OUT:
         POPA
