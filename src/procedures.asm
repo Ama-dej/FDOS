@@ -24,7 +24,7 @@ FINDCHAR:
 ; AX <- First sector of the directory.
 ; ES:BX <- Where to load the directory.
 LOAD_DIRECTORY:
-	PUSH AX
+	PUSHA
 
 	TEST AX, AX
 	JZ .ROOT_DIRECTORY
@@ -54,13 +54,13 @@ LOAD_DIRECTORY:
         CALL READ_DISK
 
 .OUT:
-	POP AX
+	POPA
 	RET
 
 ; AX <- First sector of the directory.
 ; ES:BX <- Where the directory is located.
 STORE_DIRECTORY:
-	PUSH AX
+	PUSHA
 
 	TEST AX, AX
 	JZ .ROOT_DIRECTORY
@@ -90,7 +90,7 @@ STORE_DIRECTORY:
         CALL WRITE_DISK
 
 .OUT:
-	POP AX
+	POPA
 	RET
 
 ; Turns on the PC speaker.
