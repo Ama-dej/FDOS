@@ -1,6 +1,101 @@
 ; PROCEDURES
 ; ----------
 
+; ES:BX <- Where to load the directory.
+; SI <- Path string.
+;
+; TODO:
+; - Da dela na dejanski poti (ne sam ena mapa)
+TRAVERSE_PATH:
+	PUSHA
+	PUSH DS
+	; PUSH ES
+
+	PUSH ES
+        ; MOV SI, COMMAND_PARSED + 3
+        MOV DI, DOS_SEGMENT
+        MOV ES, DI
+        MOV DI, CONVERTED_8_3
+        CALL CONVERT_TO_8_3
+	POP ES
+        JC NOT_FOUND
+
+        ; XOR BX, BX
+        ; MOV ES, BX
+        ; MOV BX, WORD[CURRENT_DIRECTORY]
+        MOV SI, DI
+        CALL FIND_ENTRY
+        JC NOT_FOUND
+
+        TEST BYTE[ES:BX + 11], 0x10
+        JZ FILE_NOT_DIRECTORY
+
+        MOV AX, WORD[ES:BX + 26]
+        MOV BX, WORD[CURRENT_DIRECTORY]
+
+        CALL LOAD_DIRECTORY
+        JC READ_ERROR
+
+        MOV WORD[CURRENT_DIRECTORY_FIRST_SECTOR], AX
+
+        MOV BX, WORD[CURRENT_DIRECTORY]
+        XOR CX, CX
+
+.ENTRY_COUNT:
+        CMP BYTE[ES:BX], 0
+        JZ .END
+
+        INC CX
+        ADD BX, 32
+        JMP .ENTRY_COUNT
+
+.END:
+        MOV WORD[DIRECTORY_SIZE], CX
+
+        MOV BX, CONVERTED_8_3
+        CMP BYTE[BX], '.'
+        JNE .APPEND 
+
+        CMP BYTE[BX + 1], '.'
+        JNE .OUT
+
+        MOV SI, DIRECTORY_PATH
+        ADD SI, WORD[PATH_LENGTH]
+        DEC SI
+
+.ERASE_LOOP:
+        MOV BYTE[SI], 0
+        DEC SI
+
+        CMP BYTE[SI], '/'
+        JNE .ERASE_LOOP
+
+        SUB SI, DIRECTORY_PATH - 1
+        MOV WORD[PATH_LENGTH], SI
+        JMP .OUT
+
+.APPEND:
+        XOR AL, AL
+        MOV SI, COMMAND_PARSED + 3
+        CALL FINDCHAR
+
+        MOV DI, DOS_SEGMENT
+        MOV ES, DI
+        MOV DI, DIRECTORY_PATH
+        ADD DI, WORD[PATH_LENGTH]
+        CALL MEMCPY
+
+        ADD DI, CX
+        MOV BYTE[DI], '/'
+        INC CX
+        ADD WORD[PATH_LENGTH], CX
+
+.OUT:
+	; POP ES
+	POP DS
+	POPA
+	RET
+
 ; AL <- Character to find.
 ; SI <- Where to search the char.
 ;
