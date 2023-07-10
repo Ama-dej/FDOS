@@ -3,6 +3,8 @@
 
 DOS_INT:
         PUSHA
+	PUSH DS
+	PUSH ES
 
         PUSH BX
         PUSH DS
@@ -148,7 +150,7 @@ INT_FILENAME_BUFFER: TIMES 11 DB ' '
 ;
 ; CX -> Number of bytes read.
 READFILE_INT:
-        PUSH DS
+        ; PUSH DS
         PUSH ES
         PUSH BX
         PUSH DI
@@ -165,7 +167,7 @@ READFILE_INT:
 
         XOR BX, BX
         MOV ES, BX
-        MOV BX, WORD[CURRENT_DIRECTORY]
+        MOV BX, WORD[WORKING_DIRECTORY]
         CALL FIND_ENTRY
 
         MOV SI, DOS_SEGMENT
@@ -186,7 +188,7 @@ READFILE_INT:
         POP ES
         JC .NOT_FOUND
 
-        PUSH ES
+        ; PUSH ES
 
         CMP DI, WORD[FILE_SIZE_UPPER]
         JA .READ_ERROR
@@ -303,19 +305,19 @@ READFILE_INT:
         JL .READ_LOOP
 
 .OUT:
-        POP ES
-        POP DS
+        ; POP ES
+        ; POP DS
         JMP RW_RET_INT
 
 .NOT_FOUND:
         MOV BYTE[INT_RET_CODE], 0x01
-        POP DS
+        ; POP DS
         JMP RW_RET_INT
 
 .READ_ERROR:
         MOV BYTE[INT_RET_CODE], 0x02
-        POP ES
-        POP DS
+        ; POP ES
+        ; POP DS
         JMP RW_RET_INT
 
 ; AH = 0x05
@@ -328,8 +330,8 @@ READFILE_INT:
 ;
 ; CX -> Number of bytes written.
 WRITEFILE_INT:
-        PUSH DS
-        PUSH ES
+        ; PUSH DS
+        ; PUSH ES
         PUSH BX
         PUSH DI
 
@@ -345,7 +347,7 @@ WRITEFILE_INT:
 
         XOR BX, BX
         MOV ES, BX
-        MOV BX, WORD[CURRENT_DIRECTORY]
+        MOV BX, WORD[WORKING_DIRECTORY]
         CALL FIND_ENTRY
 
         MOV SI, DOS_SEGMENT
@@ -553,7 +555,7 @@ WRITEFILE_INT:
         JMP .WRITE_LOOP
 
 .OUT:
-        POP ES
+        ; POP ES
         JMP RET_WRITE_INT
 
 .NOT_FOUND:
@@ -562,13 +564,13 @@ WRITEFILE_INT:
 
 .WRITE_ERROR:
         MOV BYTE[INT_RET_CODE], 0x02
-        POP ES
+        ; POP ES
         JMP RET_WRITE_INT
 
 .OUT_OF_SPACE_ERROR:
         MOV BYTE[INT_RET_CODE], 0x03
         POP DX
-        POP ES
+        ; POP ES
         JMP RET_WRITE_INT
 
 INT_WRITE_LAST: DW 0
@@ -576,8 +578,6 @@ INT_WRITE_LAST: DW 0
 ; AH = 0x06
 ; DI = Pointer to 80 byte buffer.
 COMMAND_PARAMETERS_INT:
-        PUSH ES
-
         MOV SI, DS
         MOV ES, SI
 
@@ -591,11 +591,10 @@ COMMAND_PARAMETERS_INT:
         MOV SI, ES
         MOV DS, SI
 
-        POP ES
         JMP RET_INT
 
 RET_WRITE_INT:
-        PUSH ES
+        ; PUSH ES
 
         XOR SI, SI
         MOV ES, SI
@@ -619,14 +618,16 @@ RET_WRITE_INT:
         MOV WORD[ES:SI + 28], DX
 
 .POP:
-        POP ES
+        ; POP ES
 
         CALL UPDATE_FS
-        POP DS
+        ; POP DS
 	JMP RW_RET_INT
         ; JMP RET_CODE_INT
 
 RW_RET_INT:
+	POP ES
+	POP DS
 	POPA
 	PUSH DS
 	MOV CX, DOS_SEGMENT
@@ -637,6 +638,8 @@ RW_RET_INT:
 	IRET
 
 RET_CODE_INT:
+	POP ES
+	POP DS
         POPA
         PUSH BX
         PUSH DS 
@@ -648,6 +651,8 @@ RET_CODE_INT:
         IRET
 
 RET_INT:
+	POP ES
+	POP DS
         POPA
         IRET
 
