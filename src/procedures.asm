@@ -4,50 +4,124 @@
 ; ES:BX <- Where to load the directory.
 ; SI <- Path string.
 ;
-; TODO:
-; - Da dela na dejanski poti (ne sam ena mapa)
+; AX -> First sector of the final directory.
+; CF -> Cleared on success, set otherwise.
+; AX[12:16] -> Error codes (0 if success).
+; Errors:
+; 1 - An entry in the path does not exist.
+; 2 - The entry exists but is not a directory.
+; 3 - An error occured while trying to read the directory.
 TRAVERSE_PATH:
-	PUSHA
+	PUSH BX
+	PUSH CX
+	PUSH SI
+	PUSH DI
 	PUSH DS
-	; PUSH ES
-
 	PUSH ES
-        ; MOV SI, COMMAND_PARSED + 3
+
+	MOV WORD[DIRECTORY_TARGET_SEGMENT], ES
+	MOV WORD[DIRECTORY_TARGET_OFFSET], BX
+
+	CALL ENTRIES_IN_PATH
+
+.LOAD_LOOP:
+	PUSH CX
+	PUSH ES
         MOV DI, DOS_SEGMENT
         MOV ES, DI
         MOV DI, CONVERTED_8_3
         CALL CONVERT_TO_8_3
 	POP ES
-        JC NOT_FOUND
+	PUSH DS
+        JC .DIRECTORY_NOT_FOUND
 
+	MOV AX, DOS_SEGMENT
+	MOV DS, AX
+
+	CMP BYTE[SI], '/'
+	JNE .NOT_ROOT
+
+	CMP BYTE[SI - 1], '/'
+	JE .DIRECTORY_NOT_FOUND
+
+	XOR AX, AX
+	JMP .ROOT_DIR
+
+.NOT_ROOT:
+	PUSH SI
         MOV SI, DI
         CALL FIND_ENTRY
         JC NOT_FOUND
+	POP SI
 
         TEST BYTE[ES:BX + 11], 0x10
-        JZ FILE_NOT_DIRECTORY
+        JZ .FILE_NOT_DIRECTORY
 
         MOV AX, WORD[ES:BX + 26]
-        MOV BX, WORD[WORKING_DIRECTORY]
 
+.ROOT_DIR:
+	MOV BX, DOS_SEGMENT
+	MOV ES, BX
+	MOV BX, DATA_BUFFER
+
+	CMP CX, 1
+	JNE .LOAD
+
+	MOV BX, WORD[DIRECTORY_TARGET_SEGMENT]
+	MOV ES, BX
+	MOV BX, WORD[DIRECTORY_TARGET_OFFSET]
+
+.LOAD:
         CALL LOAD_DIRECTORY
-        JC READ_ERROR
+        JC .READ_ERROR
 
-        MOV WORD[WORKING_DIRECTORY_FIRST_SECTOR], AX
+	POP DS
+	CALL NEXT_PATH_ENTRY
 
-        MOV BX, WORD[WORKING_DIRECTORY]
-        XOR CX, CX
+	POP CX
+	LOOP .LOAD_LOOP
 
-.ENTRY_COUNT:
-        CMP BYTE[ES:BX], 0
-        JZ .END
+	MOV DI, DOS_SEGMENT
+	MOV DS, DI
 
-        INC CX
-        ADD BX, 32
-        JMP .ENTRY_COUNT
-
-.END:
+	CALL ENTRY_COUNT
         MOV WORD[DIRECTORY_SIZE], CX
+	CLC
+	JMP .OUT
+
+.DIRECTORY_NOT_FOUND:
+	POP DS
+	POP CX
+	OR AX, 0x1000
+	STC
+	JMP .OUT
+
+.FILE_NOT_DIRECTORY:
+	POP DS
+	POP CX
+	OR AX, 0x2000
+	STC
+	JMP .OUT
+
+.READ_ERROR:
+	POP DS
+	POP CX
+	OR AX, 0x3000
+
+.OUT:
+	POP ES
+	POP DS
+	POP DI
+	POP SI
+	POP CX
+	POP BX
+	RET
+
+DIRECTORY_TARGET_SEGMENT: DW 0
+DIRECTORY_TARGET_OFFSET: DW 0
+
+UPDATE_WORKING_DIRECTORY_PATH:
+	PUSHA
 
         MOV BX, CONVERTED_8_3
         CMP BYTE[BX], '.'
@@ -88,9 +162,77 @@ TRAVERSE_PATH:
         ADD WORD[PATH_LENGTH], CX
 
 .OUT:
-	; POP ES
-	POP DS
 	POPA
+	RET
+
+; ES:BX <- Location of directory.
+;
+; CX -> Number of entries.
+;
+; Returns the number of entries in a directory (includes empty entries).
+ENTRY_COUNT:
+	PUSH BX
+	XOR CX, CX
+
+.LOOP:
+	CMP BYTE[ES:BX], 0
+	JZ .OUT
+
+	ADD BX, 32
+
+	INC CX
+	JMP .LOOP
+
+.OUT:
+	POP BX
+	RET
+
+; SI <- Path location.
+;
+; CX -> Number of entries.
+;
+; If an absolute path is given, the root directory counts as an entry.
+ENTRIES_IN_PATH:
+	PUSH AX
+	PUSH SI
+	MOV CX, 1
+	CLD
+
+.LOOP:
+	LODSB
+
+	CMP BYTE[SI], 0
+	JZ .OUT
+
+	CMP AL, '/'
+	JNE .LOOP
+
+	INC CX
+	JMP .LOOP
+
+.OUT:
+	POP SI
+	POP AX
+	RET
+
+; SI <- Where to search.
+;
+; SI -> Location of seperator.
+NEXT_PATH_ENTRY:
+	PUSH AX
+	CLD
+
+.LOOP:
+	LODSB
+
+	TEST AL, AL
+	JZ .OUT
+
+	CMP AL, '/'
+	JNE .LOOP
+
+.OUT:
+	POP AX
 	RET
 
 ; AL <- Character to find.
@@ -347,6 +489,9 @@ CONVERT_TO_8_3:
 
         CMP AL, 0x00
         JE .OUT
+
+	CMP AL, '/'
+	JE .OUT
 
         CMP CX, 0
         JNZ .STORE_BYTE
