@@ -5,6 +5,7 @@
 ; SI <- Path string.
 ;
 ; AX -> First sector of the final directory.
+; SI -> Pointer to the entry where the error occured (Points to 0 if all goes well).
 ; CF -> Cleared on success, set otherwise.
 ; AX[12:16] -> Error codes (0 if success).
 ; Errors:
@@ -14,18 +15,21 @@
 TRAVERSE_PATH:
 	PUSH BX
 	PUSH CX
-	PUSH SI
+	; PUSH SI
 	PUSH DI
-	PUSH DS
 	PUSH ES
+
+	PUSH DS
+	MOV DI, DOS_SEGMENT
+	MOV DS, DI
 
 	MOV WORD[DIRECTORY_TARGET_SEGMENT], ES
 	MOV WORD[DIRECTORY_TARGET_OFFSET], BX
+	POP DS
 
 	CALL ENTRIES_IN_PATH
 
 .LOAD_LOOP:
-	PUSH CX
 	PUSH ES
         MOV DI, DOS_SEGMENT
         MOV ES, DI
@@ -35,8 +39,8 @@ TRAVERSE_PATH:
 	PUSH DS
         JC .DIRECTORY_NOT_FOUND
 
-	MOV AX, DOS_SEGMENT
-	MOV DS, AX
+	MOV DI, DOS_SEGMENT
+	MOV DS, DI 
 
 	CMP BYTE[SI], '/'
 	JNE .NOT_ROOT
@@ -49,7 +53,7 @@ TRAVERSE_PATH:
 
 .NOT_ROOT:
 	PUSH SI
-        MOV SI, DI
+        MOV SI, CONVERTED_8_3
         CALL FIND_ENTRY
         JC NOT_FOUND
 	POP SI
@@ -78,41 +82,31 @@ TRAVERSE_PATH:
 	POP DS
 	CALL NEXT_PATH_ENTRY
 
-	POP CX
 	LOOP .LOAD_LOOP
 
-	MOV DI, DOS_SEGMENT
-	MOV DS, DI
-
-	CALL ENTRY_COUNT
-        MOV WORD[DIRECTORY_SIZE], CX
 	CLC
 	JMP .OUT
 
 .DIRECTORY_NOT_FOUND:
 	POP DS
-	POP CX
 	OR AX, 0x1000
 	STC
 	JMP .OUT
 
 .FILE_NOT_DIRECTORY:
 	POP DS
-	POP CX
 	OR AX, 0x2000
 	STC
 	JMP .OUT
 
 .READ_ERROR:
 	POP DS
-	POP CX
 	OR AX, 0x3000
 
 .OUT:
 	POP ES
-	POP DS
 	POP DI
-	POP SI
+	; POP SI
 	POP CX
 	POP BX
 	RET
@@ -120,57 +114,100 @@ TRAVERSE_PATH:
 DIRECTORY_TARGET_SEGMENT: DW 0
 DIRECTORY_TARGET_OFFSET: DW 0
 
+; SI <- Path string.
+;
+; Mostly to help the user know where he is.
 UPDATE_WORKING_DIRECTORY_PATH:
-	PUSHA
+	PUSH AX
+	PUSH CX
+	PUSH SI
+	PUSH DI
+	PUSH ES
 
-        MOV BX, CONVERTED_8_3
-        CMP BYTE[BX], '.'
-        JNE .APPEND 
+	CALL ENTRIES_IN_PATH
 
-        CMP BYTE[BX + 1], '.'
-        JNE .OUT
+	MOV DI, DOS_SEGMENT
+	MOV ES, DI
 
-        MOV SI, DIRECTORY_PATH
-        ADD SI, WORD[PATH_LENGTH]
-        DEC SI
+.LOOP:
+	CMP BYTE[SI], '/'
+	JE .CLEAR_PATH
+
+	CMP BYTE[SI], '.'
+	JNE .APPEND
+
+	CMP BYTE[SI + 1], '.'
+	JNE .CONTINUE
+
+        MOV DI, DIRECTORY_PATH
+        ADD DI, WORD[ES:PATH_LENGTH]
+        DEC DI
 
 .ERASE_LOOP:
-        MOV BYTE[SI], 0
-        DEC SI
+        MOV BYTE[DI], 0
+	DEC DI
 
-        CMP BYTE[SI], '/'
+        CMP BYTE[DI], '/'
         JNE .ERASE_LOOP
 
-        SUB SI, DIRECTORY_PATH - 1
-        MOV WORD[PATH_LENGTH], SI
-        JMP .OUT
+        SUB DI, DIRECTORY_PATH - 1
+        MOV WORD[ES:PATH_LENGTH], DI
+        JMP .CONTINUE
 
+.CLEAR_PATH:
+	PUSH CX
+	MOV CX, WORD[ES:PATH_LENGTH]
+
+	XOR AL, AL
+	MOV DI, DIRECTORY_PATH
+	CLD
+
+.CLEAR_LOOP:
+	STOSB
+	LOOP .CLEAR_LOOP
+
+	MOV BYTE[ES:DIRECTORY_PATH], '/'
+	MOV WORD[ES:PATH_LENGTH], 1
+	POP CX
+	JMP .CONTINUE
+	
 .APPEND:
-        XOR AL, AL
-        MOV SI, COMMAND_PARSED + 3
-        CALL FINDCHAR
+	PUSH CX
+	MOV DI, SI
+	CALL NEXT_PATH_ENTRY
+	MOV CX, SI
+	SUB CX, DI
+	DEC CX
 
-        MOV DI, DOS_SEGMENT
-        MOV ES, DI
+	MOV SI, DI
         MOV DI, DIRECTORY_PATH
-        ADD DI, WORD[PATH_LENGTH]
+        ADD DI, WORD[ES:PATH_LENGTH]
         CALL MEMCPY
 
         ADD DI, CX
         MOV BYTE[DI], '/'
         INC CX
-        ADD WORD[PATH_LENGTH], CX
+        ADD WORD[ES:PATH_LENGTH], CX
+	POP CX
+
+.CONTINUE:
+	CALL NEXT_PATH_ENTRY
+	LOOP .LOOP
 
 .OUT:
-	POPA
+	POP ES
+	POP DI
+	POP SI
+	POP CX
+	POP AX
 	RET
 
 ; ES:BX <- Location of directory.
 ;
-; CX -> Number of entries.
+; CX -> The size of the directory in entries.
 ;
 ; Returns the number of entries in a directory (includes empty entries).
-ENTRY_COUNT:
+GET_DIRECTORY_SIZE:
 	PUSH BX
 	XOR CX, CX
 
@@ -293,13 +330,14 @@ LOAD_DIRECTORY:
 
 ; AX <- First sector of the directory.
 ; ES:BX <- Where the directory is located.
+; CX <- Size of the directory (in entries).
 STORE_DIRECTORY:
 	PUSHA
 
 	TEST AX, AX
 	JZ .ROOT_DIRECTORY
 
-	MOV CX, WORD[DIRECTORY_SIZE]
+	; MOV CX, WORD[DIRECTORY_SIZE]
 	; MOV SI, WORD[CURRENT_DIRECTORY]
 
 	; PUSH DS
@@ -419,6 +457,7 @@ TO_UPPER:
 
 UPDATE_FS:
 	PUSH AX
+	PUSH CX
 	PUSH ES
 	PUSH BX
 
@@ -429,10 +468,12 @@ UPDATE_FS:
 	MOV BX, WORD[WORKING_DIRECTORY]
 
 	MOV AX, WORD[WORKING_DIRECTORY_FIRST_SECTOR]
+	MOV CX, WORD[DIRECTORY_SIZE]
 	CALL STORE_DIRECTORY
 
 	POP BX
 	POP ES
+	POP CX
 	POP AX
 	RET
 
