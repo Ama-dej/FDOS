@@ -1,6 +1,18 @@
 ; PROCEDURES
 ; ----------
 
+; Helper procedure to parse the errors returned by the TRAVERSE_PATH procedure.
+PATH_ERRORS:
+	SHR AX, 12
+
+        CMP AX, 1
+        JE DIR_NOT_FOUND
+
+        CMP AX, 2
+        JE FILE_NOT_DIRECTORY
+
+        JMP READ_ERROR
+
 ; ES:BX <- Where to load the directory.
 ; SI <- Path string.
 ;
@@ -570,7 +582,7 @@ CONVERT_TO_8_3:
         POPA
         RET
 
-; ES:BX <- Pointer to file entry.
+; DX <- File size.
 PRINT_FILE_SIZE:
         PUSH AX
         PUSH CX
@@ -582,14 +594,18 @@ PRINT_FILE_SIZE:
         MOV AH, 0x03
         INT 0x80
 
-        MOV AL, 'K'
-        CALL PUTCHAR
+	MOV AH, 0x01
+	MOV SI, KIB_SUFFIX
+	MOV CX, 4
+	INT 0x80
 
         POP SI
         POP DX
         POP CX
         POP AX
         RET
+
+KIB_SUFFIX: DB " KiB"
 
 ; ES:BX <- Pointer to file entry.
 ;
