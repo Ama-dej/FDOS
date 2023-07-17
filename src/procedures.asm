@@ -3,6 +3,8 @@
 
 ; Helper procedure to parse the errors returned by the TRAVERSE_PATH procedure.
 PATH_ERRORS:
+	MOV SP, BP
+
 	SHR AX, 12
 
         CMP AX, 1
