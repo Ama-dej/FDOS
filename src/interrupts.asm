@@ -152,7 +152,7 @@ PRINTI_INT:
 
 INT_FILENAME_BUFFER: TIMES 11 DB ' '
 
-; AH = 0x04
+; AH = 0x10
 ; ES:BX = Destination buffer.
 ; SI = Pointer to filename.
 ; CX = Number of bytes to read.
@@ -332,7 +332,7 @@ READFILE_INT:
         ; POP DS
         JMP RW_RET_INT
 
-; AH = 0x05
+; AH = 0x11
 ; ES:BX = Buffer to write.
 ; SI = Pointer to file entry.
 ; CX = Number of bytes to write.
@@ -587,7 +587,7 @@ WRITEFILE_INT:
 
 INT_WRITE_LAST: DW 0
 
-; AH = 0x06
+; AH = 0x20
 ; DI = Pointer to 80 byte buffer.
 COMMAND_PARAMETERS_INT:
         MOV SI, DS
