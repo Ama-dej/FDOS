@@ -41,16 +41,16 @@ ENFORCE_CS:
 	MOV BYTE[DRIVE_NUMBER], DL ; Store the drive number from the BIOS.
 	INT 0x13 ; Reset drive head.
 
-	MOV AH, 0x08
-	INT 0x13 ; Get diskette info.
+	; MOV AH, 0x08
+	; INT 0x13 ; Get diskette info.
 
-	MOVZX AX, CL
-	AND AL, 0x3F
-	MOV WORD[SECTORS_PER_TRACK], AX
+	; MOVZX AX, CL
+	; AND AL, 0x3F
+	; MOV WORD[SECTORS_PER_TRACK], AX
 
-	INC DH
-	SHR DX, 8
-	MOV WORD[HEAD_COUNT], DX
+	; INC DH
+	; SHR DX, 8
+	; MOV WORD[HEAD_COUNT], DX
 
 	XOR SI, SI
 	MOV ES, SI
@@ -97,6 +97,9 @@ READ_FAT_LOOP: ; In case the first fat table is broken try to load the redundant
 
 	CALL READ_DISK
 	JC ERROR
+
+	; CLI
+	; HLT
 
 	MOV AX, WORD[BX + 26] ; Get the first sector of the DOS.SYS file.
 	MOV WORD[EXPLORER_FIRST_SECTOR], AX
