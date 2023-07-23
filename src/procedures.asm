@@ -17,6 +17,7 @@ PATH_ERRORS:
 
 ; ES:BX <- Where to load the directory.
 ; SI <- Path string.
+; DL <- Drive number.
 ;
 ; AX -> First sector of the final directory.
 ; SI -> Pointer to the entry where the error occured (Points to 0 if all goes well).
@@ -313,6 +314,7 @@ FINDCHAR:
 
 ; AX <- First sector of the directory.
 ; ES:BX <- Where to load the directory.
+; DL <- Drive number.
 LOAD_DIRECTORY:
 	PUSHA
 
@@ -329,18 +331,15 @@ LOAD_DIRECTORY:
 	JMP .OUT
 
 .ROOT_DIRECTORY:
-	XOR DX, DX
-
+	PUSH DX
         MOVZX AX, BYTE[NUMBER_OF_FAT]
         MUL WORD[SECTORS_PER_FAT]
         ADD AX, WORD[RESERVED_SECTORS]
+	POP DX
 
-        MOV DX, WORD[ROOT_ENTRIES]
-        ADD DX, 15
-        SHR DX, 4
-
-        MOV CL, DL
-        MOV DL, BYTE[DRIVE_NUMBER]
+        MOV CX, WORD[ROOT_ENTRIES]
+        ADD CX, 15
+        SHR CX, 4
 
         CALL READ_DISK
 
@@ -351,6 +350,7 @@ LOAD_DIRECTORY:
 ; AX <- First sector of the directory.
 ; ES:BX <- Where the directory is located.
 ; CX <- Size of the directory (in entries).
+; DL <- Drive number.
 STORE_DIRECTORY:
 	PUSHA
 
@@ -378,6 +378,7 @@ STORE_DIRECTORY:
         CALL GET_FREE_CLUSTER
         JC .OUT ; <- Za en kurac odgovor.
 
+	PUSH DX
         MOV DX, 0xFFF
         CALL WRITE_CLUSTER
 
@@ -386,6 +387,7 @@ STORE_DIRECTORY:
         CALL WRITE_CLUSTER
 
         MOV AX, DX
+	POP DX
 
 .CONTINUE:
 	CALL WRITE_DATA
@@ -399,18 +401,15 @@ STORE_DIRECTORY:
 	JMP .OUT
 
 .ROOT_DIRECTORY:
-        XOR DX, DX
-
+	PUSH DX
         MOVZX AX, BYTE[NUMBER_OF_FAT]
         MUL WORD[SECTORS_PER_FAT]
         ADD AX, WORD[RESERVED_SECTORS]
+	POP DX
 
-        MOV DX, WORD[ROOT_ENTRIES]
-        ADD DX, 15
-        SHR DX, 4
-
-        MOV CL, DL
-        MOV DL, BYTE[DRIVE_NUMBER]
+        MOV CX, WORD[ROOT_ENTRIES]
+        ADD CX, 15
+        SHR CX, 4
 
         CALL WRITE_DISK
 
@@ -476,6 +475,7 @@ TO_UPPER:
 .OUT:
         RET
 
+; DL <- Drive number.
 UPDATE_FS:
 	PUSH AX
 	PUSH CX
@@ -498,6 +498,7 @@ UPDATE_FS:
 	POP AX
 	RET
 
+; DL <- Drive number.
 STORE_FAT:
         PUSHA
         PUSH ES
@@ -509,7 +510,7 @@ STORE_FAT:
         MOV BX, FILESYSTEM
 
         MOV AX, WORD[RESERVED_SECTORS]
-        MOV DL, BYTE[DRIVE_NUMBER]
+        ; MOV DL, BYTE[DRIVE_NUMBER]
         MOV DH, BYTE[NUMBER_OF_FAT]
 
 .STORE_LOOP:
@@ -825,6 +826,7 @@ MEMCPY:
 
 ; AX <- Current cluster.
 ; ES:BX <- Source buffer.
+; DL <- Drive number.
 WRITE_DATA:
         PUSH AX
         PUSH CX
@@ -837,7 +839,7 @@ WRITE_DATA:
 	POP DX
 
         ADD AX, WORD[DATA_AREA_BEGIN]
-        MOV DL, BYTE[DRIVE_NUMBER]
+        ; MOV DL, BYTE[DRIVE_NUMBER]
         CALL WRITE_DISK
 
         POP DX
@@ -847,6 +849,7 @@ WRITE_DATA:
 
 ; AX <- Current cluster.
 ; ES:BX <- Destination buffer.
+; DL <- Drive number.
 READ_DATA:
         PUSH AX
         PUSH CX
@@ -859,7 +862,7 @@ READ_DATA:
 	POP DX
 
         ADD AX, WORD[DATA_AREA_BEGIN]
-        MOV DL, BYTE[DRIVE_NUMBER]
+        ; MOV DL, BYTE[DRIVE_NUMBER]
         CALL READ_DISK
 
         POP DX

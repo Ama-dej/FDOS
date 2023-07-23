@@ -41,7 +41,7 @@ mcopy -i img/floppy360.img bin/dos.bin "::DOS.SYS"
 mcopy -i img/floppy1440.img bin/test_prg "::TEST_PRG"
 mcopy -i img/floppy1440.img bin/games "::GAMES"
 
-mcopy -i img/floppy360.img bin/test_prg "::TEST_PRG"
+mcopy -i img/floppy720.img bin/test_prg "::TEST_PRG"
 mcopy -i img/floppy720.img bin/games "::GAMES"
 
 mcopy -i img/floppy360.img bin/test_prg "::TEST_PRG"
