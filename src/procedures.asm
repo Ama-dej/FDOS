@@ -277,7 +277,7 @@ ENTRIES_IN_PATH:
 
 ; SI <- Where to search.
 ;
-; SI -> Location of seperator.
+; SI -> Location of next entry.
 NEXT_PATH_ENTRY:
 	PUSH AX
 	CLD
@@ -296,23 +296,17 @@ NEXT_PATH_ENTRY:
 	RET
 
 ; AL <- Character to find.
-; SI <- Where to search the char.
+; SI <- String.
 ;
-; CX -> Offset of the character in bytes.
+; SI -> Character location.
 FINDCHAR:
-	PUSH SI
-
-.LOOP:
 	CMP BYTE[SI], AL
 	JE .OUT
 
 	INC SI
-	JMP .LOOP
+	JMP FINDCHAR
 
 .OUT:
-	MOV CX, SI
-	POP SI
-	SUB CX, SI
 	RET
 
 ; AX <- First sector of the directory.
@@ -401,6 +395,7 @@ STORE_DIRECTORY:
 
 	SUB CX, 16
 	JNC .LOOP
+	CLC
 	JMP .OUT
 
 .ROOT_DIRECTORY:
