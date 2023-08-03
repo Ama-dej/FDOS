@@ -1,0 +1,29 @@
+[BITS 16]
+[ORG 0x0000]
+
+	MOV BX, 0
+	MOV CX, 1
+	MOV DX, 0
+
+	MOV DI, 10 
+
+LOOP:
+	ADD BX, CX
+	MOV CX, DX
+	MOV DX, BX
+	
+	MOV AH, 0x03
+	INT 0x80
+
+	MOV AH, 0x0E
+	MOV AL, 0x0A
+	INT 0x10
+
+	MOV AL, 0x0D
+	INT 0x10
+
+	DEC DI
+	JNZ LOOP
+
+	XOR AH, AH
+	INT 0x80

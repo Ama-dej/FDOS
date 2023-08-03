@@ -15,6 +15,7 @@ nasm -f bin prg/test.asm -o bin/test_prg/test.bin
 nasm -f bin prg/readfile.asm -o bin/test_prg/readfile.bin
 nasm -f bin prg/abc.asm -o bin/test_prg/abc.bin
 nasm -f bin prg/tobogan.asm -o bin/test_prg/tobogan.bin
+nasm -f bin prg/fib.asm -o bin/test_prg/fib.bin
 
 dd if=/dev/zero of=img/floppy1440.img count=2880 bs=512
 mkfs.fat -F 12 img/floppy1440.img
