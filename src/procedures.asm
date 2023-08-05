@@ -646,15 +646,19 @@ CONVERT_TO_8_3:
         JMP .LOOP
 
 .FIRST_DOT:
+	MOV CX, 11
+
+.LOOPCIC:
+	CMP BYTE[SI], 0
+	JZ .OUT
+	
+	CMP BYTE[SI], '/'
+	JE .OUT
+
 	LODSB
 	STOSB
 
-	CMP BYTE[SI], '.'
-	CLC
-	JNE .OUT
-
-	LODSB
-	STOSB
+	LOOP .LOOPCIC
 
 .OUT:
         POPA
