@@ -1,6 +1,94 @@
 ; PROCEDURES
 ; ----------
 
+; SI <- Location of entry in file path
+ENTRY_LEN:
+	PUSH AX
+	PUSH SI
+	XOR CX, CX
+	CLD
+
+.LOOP:
+	LODSB
+
+	TEST AL, AL
+	JZ .OUT
+
+	CMP AL, '/'
+	JE .OUT
+
+	INC CX
+	JMP .LOOP
+
+.OUT:
+	POP SI
+	POP AX
+	RET
+
+; SI <- Path string.
+FIND_NEIP:
+	PUSH AX
+	PUSH CX
+
+	CLD
+
+.LOOP:
+	TEST CL, CL
+	JZ .OUT
+
+	LODSB
+
+	CMP AL, '/'
+	JNE .LOOP
+
+	DEC CL
+	JMP .LOOP
+
+.OUT:
+	POP CX
+	POP AX
+	RET
+
+; AX <- First cluster of entry.
+; SI <- Array of clusters.
+;
+; CL -> Index of cluster.
+; CF -> Cleared if valid, set otherwise.
+IS_PATH_VALID:
+	PUSH AX
+	PUSH CX
+	PUSH DX
+	PUSH SI
+
+        MOV DX, AX
+	XOR CH, CH
+	MOV CL, 8
+        CLD
+
+.FIND_LOOP:
+        LODSW
+
+        CMP AX, DX
+        JE .INVALID
+
+        INC CH
+
+	DEC CL
+	JNZ .FIND_LOOP
+	JMP .OUT
+
+.INVALID:
+	STC
+
+.OUT:
+	MOV CL, CH
+	POP SI
+	POP DX
+	POP AX
+	MOV CH, AH
+	POP AX
+	RET
+
 ; Helper procedure to parse the errors returned by the TRAVERSE_PATH procedure.
 PATH_ERRORS:
 	MOV SP, BP
@@ -893,6 +981,7 @@ MEMCPY:
         PUSH CX
         PUSH SI
         PUSH DI
+	CLD
 
         TEST CX, CX
         JZ .OUT
