@@ -657,8 +657,56 @@ RM:
 	JC NOT_FOUND
 
 	TEST WORD[ES:BX + 11], 0x10
-	JNZ NOT_FOUND ; Pomen da je mapa.
+	JZ .FILE ; Pomen da je mapa.
 
+	CMP BYTE[ES:BX], '.'
+	JE NOT_FOUND
+
+	MOV DI, AX
+	MOV AX, WORD[ES:BX + 26]
+
+	TEST AX, AX
+	JZ NOT_FOUND
+
+	MOV CX, BX
+	PUSH ES
+
+	MOV BX, DS
+	MOV ES, BX
+	MOV BX, DATA_BUFFER
+
+	CALL LOAD_DIRECTORY
+
+	ADD BX, 64
+
+.CHECK_IF_EMPTY_LOOP:
+	MOV AL, BYTE[ES:BX]
+
+	ADD BX, 32
+
+	TEST AL, AL
+	JZ .EMPTY
+
+	CMP AL, 0xE5
+	JE .CHECK_IF_EMPTY_LOOP
+
+	POP ES
+	CALL PUTCHAR
+	JMP WRITE_ERROR
+
+.EMPTY:
+	MOV AX, DI
+	MOV BX, DATA_BUFFER
+	CALL LOAD_DIRECTORY
+
+	POP ES
+	MOV BX, CX
+
+; TODO:
+; - Če je uporabnik v tej prazni mapi nared da ga vn vrže
+; - Dodej smislna sporočila o napakah.
+
+.FILE:
 	PUSH AX
 	PUSH DX
 	MOV AX, WORD[ES:BX + 26]
