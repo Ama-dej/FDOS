@@ -14,6 +14,26 @@
         MOV CX, 0x2607
         INT 0x10 ; Make the cursor invisible.
 
+	MOV AH, 0x00
+        INT 0x1A ; Get the number of clock ticks since midnight.
+
+	ADD DX, CX
+	MOV WORD[SEED], DX
+
+	MOV CX, 100
+
+LOOP:
+	CALL GET_RANDOM_NUMBER
+	MOV DX, AX
+	MOV AH, 0x03
+	INT 0x80
+
+	MOV AH, 0x0E
+	MOV AL, ' '
+	INT 0x10
+
+	LOOP LOOP
+
 	MOV AH, 0x08
 	XOR BH, BH
 	INT 0x10
@@ -127,5 +147,30 @@ EXIT:
 	XOR AH, AH
 	INT 0x80
 
+; Generates a pseudorandom number.
+; AX -> A pseudorandom number.
+GET_RANDOM_NUMBER:
+	PUSH CX
+	PUSH DX
+	XOR DX, DX
+
+	MOV AX, WORD[SEED]
+	MUL AX
+	XCHG AH, AL
+
+	PUSH AX
+	MOV AH, 0x00
+	INT 0x1A
+	POP AX
+	ADD AX, DX
+	SUB AX, WORD[SEED]
+
+	MOV WORD[SEED], AX
+
+	POP DX
+	POP CX
+	RET
+
 CURSOR_POSITION: DW 0
 PREVIOUS_ATTRIBUTE: DW 0
+SEED: DW 0
