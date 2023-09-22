@@ -47,6 +47,33 @@ LOOP:
 
 	LOOP LOOP
 
+	MOV CX, 40 * 24
+	MOV SI, FIELD
+
+COUNT_SURROUNDING:
+	PUSH CX
+
+	CMP BYTE[SI], '*'
+	JE .SKIP
+
+	MOV AL, '0'
+
+	MOV CH, 0
+	MOV CL, 1
+	CALL SURROUNDING_IN_FIELD
+	JC .SKIP
+
+	CALL SURROUNDING_IS_MINE
+	JNE .SKIP
+
+	INC AL
+	MOV BYTE[SI], AL
+
+.SKIP:
+	INC SI
+	POP CX
+	LOOP COUNT_SURROUNDING
+
 PRINT:
 	MOV AH, 0x01
 	MOV CX, 40 * 24
@@ -165,6 +192,115 @@ EXIT:
 
 	XOR AH, AH
 	INT 0x80
+
+; CH <- y offset
+; CL <- x offset
+; SI <- The selected tile to check relatively from.
+;
+; ZF -> Set if it is a mine.
+SURROUNDING_IS_MINE:
+	PUSH AX
+	PUSH BX
+	PUSH DX
+
+	MOV AL, CH
+	CALL SIGN_EXTEND
+
+	XOR DX, DX
+	MOV BX, 40
+	MUL BX
+
+	MOV BX, AX
+	ADD BX, SI
+
+	MOV AL, CL
+	CALL SIGN_EXTEND
+
+	ADD BX, AX
+
+	CMP BYTE[BX], '*'
+
+	POP DX
+	POP BX
+	POP AX
+	RET
+
+; AL <- Signed number.
+;
+; AX -> Extended signed number.
+SIGN_EXTEND:
+	PUSH BX
+
+	MOV BL, AL
+	MOV AH, 0xFF
+	ADD AX, 0x0080
+	NOT AH
+	MOV AL, BL
+
+	POP BX
+	RET
+
+; CH <- y offset
+; CL <- x offset
+; SI <- The selected tile to compare relatively from.
+;
+; CF -> Cleared if in field.
+SURROUNDING_IN_FIELD:
+	PUSH AX
+	PUSH BX
+	PUSH CX
+	PUSH DX
+	PUSH SI
+
+	XOR DX, DX
+
+	MOV AL, CH
+	CALL SIGN_EXTEND
+
+	; MOV BL, CH
+	; MOV BH, 0xFF
+	; ADD BX, 0x0080
+	; NOT BH
+	; MOV AH, BH
+	; MOV AL, CH
+
+	MOV BX, 40
+	MUL BX
+
+	MOV BX, SI
+	SUB BX, FIELD
+	ADD BX, AX
+
+	CMP BX, 24 * 40 - 1
+	JA .OUTSIDE
+
+	XOR DX, DX
+	MOV AX, SI
+	SUB AX, FIELD
+	MOV BX, 40
+	DIV BX
+
+	MOV AL, CL
+	CALL SIGN_EXTEND
+
+	ADD AX, DX
+
+	CMP AX, 39
+	JA .OUTSIDE
+
+	CLC
+	JMP .OUT
+
+.OUTSIDE:
+	STC
+
+.OUT:
+	POP SI
+	POP DX
+	POP CX
+	POP BX
+	POP AX
+	RET
 
 ; Generates a pseudorandom number.
 ; AX -> A pseudorandom number.
