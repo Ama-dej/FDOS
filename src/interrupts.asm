@@ -74,10 +74,16 @@ PRINT_INT:
         MOV AH, 0x0E
 
 .PRINT_LOOP:
+	TEST CX, CX
+	JZ .OUT
+
         LODSB
         INT 0x10
-        LOOP .PRINT_LOOP
 
+	DEC CX
+	JMP .PRINT_LOOP
+
+.OUT:
         JMP RET_INT
 
 ; AH = 0x02
