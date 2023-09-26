@@ -1,13 +1,14 @@
 [BITS 16]
 [ORG 0x0000]
 
-	MOV AH, 0x01
-	MOV SI, DATA
-	MOV CX, DATA_END - DATA
+	MOV AH, 0x13
+	MOV SI, FILE
 	INT 0x80
 
-	MOV AH, 0x00
+	MOV AH, 0
 	INT 0x80
+
+FILE: DB "TEST.BIN", 0
 
 DATA: DB "abcdefghijklmno"
 DATA_END:
