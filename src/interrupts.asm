@@ -631,10 +631,7 @@ CHANGE_DIRECTORY_INT:
 
 	JMP RET_CODE_INT
 
-; TODO:
-; - Spremeni da se stvar ne sprdne če je mapa iz katere je bila datoteka izvršena izbrisana
-; - Dodaj še mal komentarjev
-
+; Removes the entry (file or directory) given in SI (relative and absolute paths are accepted).
 ; AH = 0x13
 ; SI = Path string.
 REMOVE_ENTRY_INT:
@@ -649,16 +646,22 @@ REMOVE_ENTRY_INT:
 
 	MOV CX, SI
 	SUB CX, DX
+	INC CX
 	MOV SI, DX
-	CALL MEMCPY
+	; CALL MEMCPY
 
-	ADD DI, CX
-	MOV BYTE[ES:DI], 0
+.COPY_LOOP:
+	LODSB
+	CALL TO_UPPER
+	STOSB
+
+	LOOP .COPY_LOOP
 
 	MOV SI, DOS_SEGMENT
 	MOV DS, SI
         MOV DX, TEMP_BUFFER
 	MOV SI, DI
+	ADD SI, CX
 	SUB SI, 2
 
 .FIND_DIRECTORIES_LOOP:
@@ -806,8 +809,16 @@ REMOVE_ENTRY_INT:
 
         CALL UPDATE_WORKING_DIRECTORY_PATH
 
+	MOV AX, DOS_SEGMENT
+	MOV ES, AX
+
+	MOV SI, PATH_INFO_BUFFER
+	MOV DI, DIRECTORY_PATH
+	MOV CX, DIRECTORY_INFO_END - DIRECTORY_PATH
+	CALL MEMCPY
+
 .OUT:
-        JMP DOS_START
+        JMP RET_CODE_INT
 
 ; AH = 0x20
 ; DI = Pointer to 80 byte buffer.

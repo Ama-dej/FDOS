@@ -8,7 +8,7 @@
 	MOV AH, 0
 	INT 0x80
 
-FILE: DB "TEST.BIN", 0
+FILE: DB "/games/snake.bin", 0
 
 DATA: DB "abcdefghijklmno"
 DATA_END:
