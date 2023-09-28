@@ -5,10 +5,14 @@
 	MOV SI, FILE
 	INT 0x80
 
+	MOV AH, 0x21
+	MOV DL, AL
+	INT 0x80
+
 	MOV AH, 0
 	INT 0x80
 
-FILE: DB "/games/snake.bin", 0
+FILE: DB "/TEST_PRG/READFILE.BIN", 0
 
 DATA: DB "abcdefghijklmno"
 DATA_END:

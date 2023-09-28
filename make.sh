@@ -10,7 +10,7 @@ mkdir bin/games
 mkdir bin/test_prg
 nasm -f bin prg/snake.asm -o bin/games/snake.bin
 nasm -f bin prg/tetris.asm -o bin/games/tetris.bin
-nasm -f bin prg/big.asm -o bin/test_prg/big.bin
+nasm -f bin prg/big.asm -o bin/test_prg/a
 nasm -f bin prg/test.asm -o bin/test_prg/test.bin
 nasm -f bin prg/readfile.asm -o bin/test_prg/readfile.bin
 nasm -f bin prg/abc.asm -o bin/test_prg/abc.bin
