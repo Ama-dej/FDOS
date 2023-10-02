@@ -1,7 +1,85 @@
 ; PROCEDURES
 ; ----------
 
-; SI <- Location of entry in file path
+; TODO:
+; - Stestirej to proceduro.
+
+; SI <- Path.
+; DL <- Drive number.
+; ES:BX <- Where to load the directory.
+; DI <- Location of an 11 byte buffer.
+;
+; AX -> Return value of the TRAVERSE_PATH procedure.
+; DI -> The converted entry
+CONVERT_LE_AND_TRAVERSE:
+	PUSH SI
+	PUSH CX
+	PUSH DX
+
+	MOV CX, SI
+
+	CMP BYTE[SI], 0
+	JZ .CONVERT_ERROR
+
+	XOR AL, AL
+	CALL FINDCHAR
+
+	SUB SI, 1
+
+	PUSH ES
+	MOV AX, DS
+	MOV ES, AX
+
+.FIND_SEPERATOR:
+	CMP BYTE[SI - 1], '/'
+	JE .FOUND_IT
+	
+	CMP SI, CX
+	JE .NO_PATH
+
+	DEC SI
+	JMP .FIND_SEPERATOR
+
+.FOUND_IT:
+	CALL CONVERT_TO_8_3
+	POP ES
+	JC .CONVERT_ERROR
+
+	MOV DH, BYTE[SI]
+	MOV BYTE[SI], 0
+
+	PUSH CX 
+	MOV CX, SI
+	POP SI
+
+	CALL TRAVERSE_PATH
+	JC .OUT
+
+	MOV SI, CX
+	MOV BYTE[SI], DH
+	JMP .OUT
+
+.CONVERT_ERROR:
+	OR AX, 0x5000
+	STC
+	JMP .OUT
+
+.NO_PATH:
+	CALL CONVERT_TO_8_3
+	POP ES
+	JC .CONVERT_ERROR
+
+	MOV AX, WORD[WORKING_DIRECTORY_FIRST_SECTOR]
+
+.OUT:
+	POP DX
+	POP CX
+	POP SI
+	RET
+
+; SI <- Location of entry in file path.
+;
+; CX -> Length of the entry.
 ENTRY_LEN:
 	PUSH AX
 	PUSH SI
@@ -26,6 +104,8 @@ ENTRY_LEN:
 	RET
 
 ; SI <- Path string.
+;
+; SI -> Location of next entry in path.
 FIND_NEIP:
 	PUSH AX
 	PUSH CX
@@ -724,6 +804,7 @@ CONVERT_TO_8_3:
 
 .LOOP:
         LODSB
+	CALL TO_UPPER
 
         CMP AL, '.'
         JE .DOT

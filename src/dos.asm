@@ -609,11 +609,17 @@ RM:
 BACK_CMD: DB "..", 0x00
 
 TEST:
+	MOV AH, 0x14
+	MOV SI, IME
+	INT 0x80
+
 	MOV AH, 0x21
-	MOV DL, 2
+	MOV DL, AL
 	INT 0x80
 
 	JMP DOS_START
+
+IME: DB "DAT.TXT", 0
 
 %INCLUDE "src/procedures.asm"
 %INCLUDE "src/interrupts.asm"
