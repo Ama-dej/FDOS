@@ -1,6 +1,74 @@
 ; PROCEDURES
 ; ----------
 
+; DH <- Entry attributes
+; SI <- Converted 8_3 filename.
+; ES:BX <- Directory location.
+;
+; If CF == 1 -> AL = Error code.
+; ES:DI -> Entry location.
+CREATE_ENTRY:
+	PUSH CX
+	PUSH SI
+
+        MOV DI, BX
+        MOV SI, FILENAME_BUFFER
+        CALL FIND_ENTRY
+        JNC .FILE_EXISTS_ERROR
+
+        ; Najdi prosto mesto v mapi.
+        ; Če je na koncu mape preveri da je konec mape terminiran z 0.
+        ; Kopiraj ime datoteke v prazen prostor.
+        ; Shrani spremembe na disk.
+
+        MOV BX, DI
+        CALL GET_DIRECTORY_SIZE
+        XOR CX, CX
+
+.FIND_FREE:
+        CMP BYTE[ES:BX], 0
+        JE .EXTEND
+
+        CMP BYTE[ES:BX], 0xE5
+        JE .FOUND_FREE
+
+        CMP CX, 128
+        JAE .DIRECTORY_FULL_ERROR ; <- Zamenji to z smiselno napako.
+
+        ADD BX, 32
+        INC CX
+        JMP .FIND_FREE
+
+.EXTEND:
+        MOV BYTE[ES:BX + 32], 0
+
+.FOUND_FREE:
+        PUSH BX
+        MOV BX, DI
+        POP DI
+
+        MOV SI, FILENAME_BUFFER
+        MOV CX, 11
+        CALL MEMCPY
+
+	JMP .OUT
+
+.FILE_EXISTS_ERROR:
+	MOV AL, 0x06
+	JMP .ERROR
+
+.DIRECTORY_FULL_ERROR:
+	MOV AL, 0x03
+
+.ERROR:
+	STC
+
+.OUT:
+	POP SI
+	POP CX
+	RET
+
+
 ; TODO:
 ; - Stestirej to proceduro.
 
