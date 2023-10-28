@@ -643,17 +643,19 @@ RM:
 BACK_CMD: DB "..", 0x00
 
 TEST:
-	MOV AH, 0x14
+	MOV AH, 0x16
 	MOV SI, IME
+	MOV DI, KAM
 	INT 0x80
 
-	MOV AH, 0x21
 	MOV DL, AL
+	MOV AH, 0x21
 	INT 0x80
 
 	JMP DOS_START
 
-IME: DB "DAT.TXT", 0
+IME: DB "games/tetris.bin", 0
+KAM: DB "/games/", 0
 
 %INCLUDE "src/procedures.asm"
 %INCLUDE "src/interrupts.asm"

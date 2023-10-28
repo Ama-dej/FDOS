@@ -12,7 +12,7 @@ CREATE_ENTRY:
 	PUSH SI
 
         MOV DI, BX
-        MOV SI, FILENAME_BUFFER
+        ; MOV SI, FILENAME_BUFFER
         CALL FIND_ENTRY
         JNC .FILE_EXISTS_ERROR
 
@@ -47,7 +47,7 @@ CREATE_ENTRY:
         MOV BX, DI
         POP DI
 
-        MOV SI, FILENAME_BUFFER
+        ; MOV SI, FILENAME_BUFFER
         MOV CX, 11
         CALL MEMCPY
 
@@ -1238,6 +1238,8 @@ WRITE_CLUSTER:
         RET
 
 ; AX -> Free cluster location.
+;
+; CF -> Set if out of space, cleared otherwise.
 GET_FREE_CLUSTER:
         PUSH ES
         PUSH BX
