@@ -299,6 +299,27 @@ CLS:
 	INT 0x10
 	JMP DOS_START
 
+CP:
+	XOR AL, AL
+	MOV SI, COMMAND_PARSED
+	CALL FINDCHAR
+	INC SI
+
+	PUSH SI
+	CALL FINDCHAR
+	MOV DI, SI
+	INC DI
+	POP SI
+
+	MOV AH, 0x16
+	INT 0x80
+
+	MOV DL, AL
+	MOV AH, 0x21
+	INT 0x80
+
+	JMP DOS_START
+
 ; Prints out all files and their sizes (in KiB) in a directory.
 DIR:
 	XOR AL, AL
@@ -642,6 +663,9 @@ RM:
 
 BACK_CMD: DB "..", 0x00
 
+; TODO:
+; - Testiri copy interrupt še v programu.
+; - Moderniziri read in write interrupte.
 TEST:
 	MOV AH, 0x16
 	MOV SI, IME
@@ -654,8 +678,8 @@ TEST:
 
 	JMP DOS_START
 
-IME: DB "/test_prg/fib.bin", 0
-KAM: DB "tetris.bin", 0
+IME: DB "/test_prg/games/mines.bin", 0
+KAM: DB "/test_prg/abc.bin", 0
 
 %INCLUDE "src/procedures.asm"
 %INCLUDE "src/interrupts.asm"
@@ -663,6 +687,7 @@ KAM: DB "tetris.bin", 0
 COMMAND_LIST:
 CD_COMMAND: DB "CD", 0x00
 CLS_COMMAND: DB "CLS", 0x00
+CP_COMMAND: DB "CP", 0x00
 DIR_COMMAND: DB "DIR", 0x00
 MK_COMMAND: DB "MK", 0x00
 MKDIR_COMMAND: DB "MKDIR", 0x00
@@ -675,6 +700,7 @@ COMMAND_LIST_END: DB 0xFF
 COMMAND_ADDRESS_LIST:
 CD_ADDRESS: DW CD
 CLS_ADDRESS: DW CLS
+CP_ADDRESS: DW CP
 DIR_ADDRESS: DW DIR
 MK_ADDRESS: DW MK
 MKDIR_ADDRESS: DW MKDIR

@@ -16,13 +16,8 @@ CREATE_ENTRY:
         CALL FIND_ENTRY
         JNC .FILE_EXISTS_ERROR
 
-        ; Najdi prosto mesto v mapi.
-        ; Če je na koncu mape preveri da je konec mape terminiran z 0.
-        ; Kopiraj ime datoteke v prazen prostor.
-        ; Shrani spremembe na disk.
-
         MOV BX, DI
-        CALL GET_DIRECTORY_SIZE
+        ; CALL GET_DIRECTORY_SIZE
         XOR CX, CX
 
 .FIND_FREE:
@@ -826,6 +821,33 @@ UPDATE_FS:
 	POP CX
 	POP AX
 	RET
+
+; DL <- Drive number.
+LOAD_FAT:
+        PUSHA
+        PUSH ES
+
+        MOV CX, WORD[SECTORS_PER_FAT]
+
+        XOR BX, BX
+        MOV ES, BX
+        MOV BX, FILESYSTEM
+
+        MOV AX, WORD[RESERVED_SECTORS]
+        ; MOV DL, BYTE[DRIVE_NUMBER]
+        MOV DH, BYTE[NUMBER_OF_FAT]
+
+.LOAD_LOOP:
+        CALL READ_DISK
+
+        ADD AX, CX
+
+        DEC DH
+        JNZ .LOAD_LOOP
+
+        POP ES
+        POPA
+        RET
 
 ; DL <- Drive number.
 STORE_FAT:
