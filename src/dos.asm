@@ -654,8 +654,8 @@ TEST:
 
 	JMP DOS_START
 
-IME: DB "games/tetris.bin", 0
-KAM: DB "/games/", 0
+IME: DB "/test_prg/fib.bin", 0
+KAM: DB "tetris.bin", 0
 
 %INCLUDE "src/procedures.asm"
 %INCLUDE "src/interrupts.asm"
