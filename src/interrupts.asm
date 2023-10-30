@@ -191,7 +191,7 @@ INT_FILENAME_BUFFER: TIMES 11 DB ' '
 ; CX -> Number of bytes read.
 READFILE_INT:
         ; PUSH DS
-        PUSH ES
+        ; PUSH ES
         PUSH BX
         PUSH DI
 
@@ -209,6 +209,7 @@ READFILE_INT:
         MOV ES, BX
         MOV BX, WORD[WORKING_DIRECTORY]
         CALL FIND_ENTRY
+	JC .LABEL_HACK
 
         MOV SI, DOS_SEGMENT
         MOV DS, SI
@@ -225,10 +226,9 @@ READFILE_INT:
 .LABEL_HACK:
         POP DI
         POP BX
-        POP ES
         JC INT_NOT_FOUND_ERROR
-
-        ; PUSH ES
+        POP ES
+        PUSH ES
 
         CMP DI, WORD[FILE_SIZE_UPPER]
         JA INT_READ_ERROR
@@ -381,6 +381,7 @@ WRITEFILE_INT:
         MOV ES, BX
         MOV BX, WORD[WORKING_DIRECTORY]
         CALL FIND_ENTRY
+	JC .LABEL_HACK
 
         MOV SI, DOS_SEGMENT
         MOV DS, SI
@@ -398,8 +399,9 @@ WRITEFILE_INT:
 .LABEL_HACK:
         POP DI
         POP BX
-        POP ES
+        ; POP ES
         JC INT_NOT_FOUND_ERROR
+	POP ES
         PUSH ES
 
         PUSH BX
@@ -602,7 +604,7 @@ WRITEFILE_INT:
 INT_WRITE_LAST: DW 0
 
 ; AH = 0x12
-; SI = Path string
+; SI = Path string.
 CHANGE_DIRECTORY_INT:
 	MOV DX, DOS_SEGMENT
 	MOV ES, DX
