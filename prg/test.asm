@@ -35,7 +35,7 @@ EXIT:
 	MOV AH, 0x00
 	INT 0x80
 
-FILENAME: DB "dede", 0x00
+FILENAME: DB "games/dede", 0x00
 SWER: DB "fak"
 BUFFER:
 	MOV AH, 0x0E
