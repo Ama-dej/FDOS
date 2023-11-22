@@ -7,17 +7,17 @@ nasm -f bin src/boot.asm -o bin/boot.bin
 nasm -f bin src/dos.asm -o bin/dos.bin
 
 mkdir bin/games
-mkdir bin/test_prg
+mkdir bin/test
 nasm -f bin prg/snake.asm -o bin/games/snake.bin
-nasm -f bin prg/tetris.asm -o bin/games/tetris.bin
-nasm -f bin prg/big.asm -o bin/test_prg/a
-nasm -f bin prg/test.asm -o bin/test_prg/test.bin
-nasm -f bin prg/readfile.asm -o bin/test_prg/readfile.bin
-nasm -f bin prg/div.asm -o bin/test_prg/div.bin
-nasm -f bin prg/tobogan.asm -o bin/test_prg/tobogan.bin
-nasm -f bin prg/fib.asm -o bin/test_prg/fib.bin
+nasm -f bin prg/tetris.asm -o bin/games/tetris.prg
+nasm -f bin prg/big.asm -o bin/test/a
+nasm -f bin prg/test.asm -o bin/test/test.bin
+nasm -f bin prg/readfile.asm -o bin/test/readfile.bin
+nasm -f bin prg/div.asm -o bin/test/div.bin
+nasm -f bin prg/tobogan.asm -o bin/test/tobogan.bin
+nasm -f bin prg/fib.asm -o bin/test/fib.bin
 nasm -f bin prg/mines.asm -o bin/games/mines.bin
-nasm -f bin prg/mandel.asm -o bin/test_prg/mandel.bin
+nasm -f bin prg/mandel.asm -o bin/test/mandel.prg
 
 dd if=/dev/zero of=img/floppy1440.img count=2880 bs=512
 mkfs.fat -F 12 img/floppy1440.img
@@ -52,15 +52,15 @@ mcopy -i img/floppy360.img bin/dos.bin "::DOS.SYS"
 # mcopy -i img/floppy1200.img LICENSE "::LICENSE.TXT"
 # mcopy -i img/floppy360.img LICENSE "::LICENSE.TXT"
 
-mcopy -i img/floppy1440.img bin/test_prg "::TEST_PRG"
+mcopy -i img/floppy1440.img bin/test "::TEST"
 mcopy -i img/floppy1440.img bin/games "::GAMES"
-mcopy -i img/floppy1440.img bin/games "::TEST_PRG/GAMES"
+mcopy -i img/floppy1440.img bin/games "::TEST/GAMES"
 
-mcopy -i img/floppy720.img bin/test_prg "::TEST_PRG"
+mcopy -i img/floppy720.img bin/test "::TEST"
 mcopy -i img/floppy720.img bin/games "::GAMES"
 
-mcopy -i img/floppy1200.img bin/test_prg "::TEST_PRG"
+mcopy -i img/floppy1200.img bin/test "::TEST"
 mcopy -i img/floppy1200.img bin/games "::GAMES"
 
-mcopy -i img/floppy360.img bin/test_prg "::TEST_PRG"
+mcopy -i img/floppy360.img bin/test "::TEST"
 mcopy -i img/floppy360.img bin/games "::GAMES"
