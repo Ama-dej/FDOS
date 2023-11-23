@@ -8,15 +8,15 @@ nasm -f bin src/dos.asm -o bin/dos.bin
 
 mkdir bin/games
 mkdir bin/test
-nasm -f bin prg/snake.asm -o bin/games/snake.bin
+nasm -f bin prg/snake.asm -o bin/games/snake.prg
 nasm -f bin prg/tetris.asm -o bin/games/tetris.prg
-nasm -f bin prg/big.asm -o bin/test/a
+nasm -f bin prg/big.asm -o bin/test/velik.prg
 nasm -f bin prg/test.asm -o bin/test/test.bin
 nasm -f bin prg/readfile.asm -o bin/test/readfile.bin
-nasm -f bin prg/div.asm -o bin/test/div.bin
+nasm -f bin prg/div.asm -o bin/test/div.prg
 nasm -f bin prg/tobogan.asm -o bin/test/tobogan.bin
-nasm -f bin prg/fib.asm -o bin/test/fib.bin
-nasm -f bin prg/mines.asm -o bin/games/mines.bin
+nasm -f bin prg/fib.asm -o bin/test/fib.prg
+nasm -f bin prg/mines.asm -o bin/games/mines.prg
 nasm -f bin prg/mandel.asm -o bin/test/mandel.prg
 
 dd if=/dev/zero of=img/floppy1440.img count=2880 bs=512
