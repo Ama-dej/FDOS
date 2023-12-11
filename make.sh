@@ -8,6 +8,7 @@ nasm -f bin src/dos.asm -o bin/dos.bin
 
 mkdir bin/games
 mkdir bin/demo
+mkdir bin/mapa
 
 cd prg
 for file in *
@@ -24,6 +25,8 @@ mv snake.bin games/snake.prg
 mv mandel.bin demo/mandel.prg
 mv fib.bin demo/fib.prg
 mv div.bin demo/div.prg
+
+mv izbrisi.bin mapa/izbrisi.prg
 cd ..
 
 dd if=/dev/zero of=img/floppy1440.img count=2880 bs=512
@@ -44,4 +47,5 @@ do
 	mcopy -i "$img" bin/dos.bin "::DOS.SYS"
 	mcopy -i "$img" bin/demo "::DEMO"
 	mcopy -i "$img" bin/games "::GAMES"
+	mcopy -i "$img" bin/mapa "::MAPA"
 done

@@ -91,7 +91,7 @@ CREATE_ENTRY:
 ; - Stestirej to proceduro.
 
 ; SI <- Path.
-; DL <- Drive number.
+; DL <- Drive number. (NE VEČ)
 ; ES:BX <- Where to load the directory.
 ; DI <- Location of an 11 byte buffer.
 ;
@@ -102,6 +102,7 @@ CONVERT_LE_AND_TRAVERSE:
 	PUSH CX
 	PUSH DX
 
+	MOV DL, BYTE[DRIVE_NUMBER]
 	MOV CX, SI
 
 	CMP BYTE[SI], 0
@@ -274,7 +275,7 @@ PATH_ERRORS:
 
 ; ES:BX <- Where to load the directory.
 ; SI <- Path string.
-; DL <- Drive number.
+; DL <- Drive number. (NE VEČ)
 ;
 ; AX -> First sector of the final directory.
 ; SI -> Pointer to the entry where the error occured (Points to 0 if all goes well).
@@ -289,6 +290,8 @@ TRAVERSE_PATH:
 	PUSH CX
 	PUSH DI
 	PUSH ES
+
+	PUSH DX ; <- !!!!!!!
 
 	PUSH DS
 	MOV DI, DOS_SEGMENT
@@ -391,7 +394,7 @@ TRAVERSE_PATH:
 	MOV BX, WORD[DIRECTORY_TARGET_OFFSET]
 
 .LOAD:
-	MOV DL, BYTE[DRIVE_NUMBER] ; <- When multi drive support arrives.
+	MOV DL, BYTE[DRIVE_NUMBER] ; <- When multi drive support arrives. (figured out this is ok)
         CALL LOAD_DIRECTORY
         JC .READ_ERROR
 
@@ -453,6 +456,8 @@ TRAVERSE_PATH:
 	STC
 
 .OUT:
+	POP DX ; <- !!!!!!!!!!!!!1
+
 	POP ES
 	POP DI
 	POP CX
@@ -660,9 +665,10 @@ FINDCHAR:
 
 ; AX <- First sector of the directory.
 ; ES:BX <- Where to load the directory.
-; DL <- Drive number.
+; DL <- Drive number. (NE VEČ)
 LOAD_DIRECTORY:
 	PUSHA
+	MOV DL, BYTE[DRIVE_NUMBER]
 
 	TEST AX, AX
 	JZ .ROOT_DIRECTORY
@@ -696,9 +702,10 @@ LOAD_DIRECTORY:
 ; AX <- First sector of the directory.
 ; ES:BX <- Where the directory is located.
 ; CX <- Size of the directory (in entries).
-; DL <- Drive number.
+; DL <- Drive number. (NE VEČ)
 STORE_DIRECTORY:
 	PUSHA
+	MOV DL, BYTE[DRIVE_NUMBER]
 
 	TEST AX, AX
 	JZ .ROOT_DIRECTORY
@@ -845,7 +852,7 @@ UPDATE_FS_WRITE_INT:
 	POP AX
 	RET
 
-; DL <- Drive number.
+; DL <- Drive number. (slaba implementacija, če že hočem številko za disketno enoto bi rabu zahtevat tud podatke v zagonskem odseku?)
 LOAD_FAT:
         PUSHA
         PUSH ES
@@ -872,7 +879,7 @@ LOAD_FAT:
         POPA
         RET
 
-; DL <- Drive number.
+; DL <- Drive number. (isti komentar kot pri STORE_FAT)
 STORE_FAT:
         PUSHA
         PUSH ES
@@ -1206,7 +1213,6 @@ MEMCPY:
 
 ; AX <- Current cluster.
 ; ES:BX <- Source buffer.
-; DL <- Drive number.
 WRITE_DATA:
         PUSH AX
         PUSH CX
@@ -1219,7 +1225,7 @@ WRITE_DATA:
 	POP DX
 
         ADD AX, WORD[DATA_AREA_BEGIN]
-        ; MOV DL, BYTE[DRIVE_NUMBER]
+        MOV DL, BYTE[DRIVE_NUMBER]
         CALL WRITE_DISK
 
         POP DX
@@ -1229,7 +1235,6 @@ WRITE_DATA:
 
 ; AX <- Current cluster.
 ; ES:BX <- Destination buffer.
-; DL <- Drive number.
 READ_DATA:
         PUSH AX
         PUSH CX
@@ -1242,7 +1247,7 @@ READ_DATA:
 	POP DX
 
         ADD AX, WORD[DATA_AREA_BEGIN]
-        ; MOV DL, BYTE[DRIVE_NUMBER]
+        MOV DL, BYTE[DRIVE_NUMBER]
         CALL READ_DISK
 
         POP DX

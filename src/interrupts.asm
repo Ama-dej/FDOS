@@ -951,22 +951,30 @@ REMOVE_ENTRY_INT:
         CMP DI, WORD[WORKING_DIRECTORY_FIRST_SECTOR]
         JNE .OUT
 
-        MOV AH, 0x12
         MOV SI, BACK_CMD
-        INT 0x80
-
         CALL UPDATE_WORKING_DIRECTORY_PATH
+
+        MOV AH, 0x12
+        INT 0x80 ; Problem je, da ne preverjam, ali je ta stvar uspela ali ne.
+
+	CMP DI, WORD[DIRECTORY_RET_FIRST_SECTOR]
+	JNE .OUT
+
+	MOV AX, WORD[WORKING_DIRECTORY_FIRST_SECTOR]
+	MOV WORD[DIRECTORY_RET_FIRST_SECTOR], AX
 
 	MOV AX, DOS_SEGMENT
 	MOV ES, AX
 
-	MOV SI, PATH_INFO_BUFFER
-	MOV DI, DIRECTORY_PATH
+	MOV SI, DIRECTORY_PATH
+	MOV DI, PATH_INFO_BUFFER
 	MOV CX, DIRECTORY_INFO_END - DIRECTORY_PATH
 	CALL MEMCPY
 
 .OUT:
         JMP RET_CODE_INT
+
+BACK_CMD: DB "..", 0x00
 
 ; Here to reuse code.
 ; Both interrupts for creating files and directories use literally the same code at the start.

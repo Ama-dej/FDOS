@@ -756,8 +756,6 @@ RM:
 
 	JMP DOS_START
 
-BACK_CMD: DB "..", 0x00
-
 ; TODO:
 ; - Testiri copy interrupt še v programu.
 ; - Moderniziri read in write interrupte.
