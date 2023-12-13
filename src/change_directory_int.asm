@@ -1,0 +1,29 @@
+; AH = 0x12
+; SI = Path string.
+CHANGE_DIRECTORY_INT:
+        MOV DX, DOS_SEGMENT
+        MOV ES, DX
+
+        XOR CX, CX
+        MOV BX, WORD[ES:WORKING_DIRECTORY]
+        MOV ES, CX
+        CALL TRAVERSE_PATH
+        JNC .OK
+
+        SHR AX, 12
+        MOV DX, DOS_SEGMENT
+        MOV ES, DX
+
+        MOV BYTE[ES:INT_RET_CODE], AL
+        JMP RET_CODE_INT
+
+.OK:
+        MOV CX, DOS_SEGMENT
+        MOV DS, CX
+
+        MOV WORD[WORKING_DIRECTORY_FIRST_SECTOR], AX
+
+        CALL GET_DIRECTORY_SIZE
+        MOV WORD[DIRECTORY_SIZE], CX
+
+        JMP RET_CODE_INT

@@ -1,6 +1,66 @@
 ; PROCEDURES
 ; ----------
 
+; Here to reuse code.
+; Both interrupts for creating files and directories use literally the same code at the start.
+MAKE_ENTRY_PROC:
+        PUSH SI
+        XOR AL, AL
+        CALL FINDCHAR
+        POP DX
+
+        MOV DI, DOS_SEGMENT
+        MOV ES, DI
+        MOV DI, TEMP_BUFFER
+
+        MOV CX, SI
+        SUB CX, DX
+        INC CX
+        MOV SI, DX
+        CLD
+
+.COPY_LOOP:
+        LODSB
+        CALL TO_UPPER
+        STOSB
+
+        LOOP .COPY_LOOP
+
+        MOV SI, DOS_SEGMENT
+        MOV DS, SI
+
+        MOV SI, TEMP_BUFFER
+        MOV DI, FILENAME_BUFFER
+        MOV BX, DATA_BUFFER
+        MOV DL, BYTE[DRIVE_NUMBER]
+        CALL CONVERT_LE_AND_TRAVERSE
+        JNC .OK
+
+        SHR AX, 12
+        MOV BYTE[INT_RET_CODE], AL
+        STC
+        JMP .NOT_WORKING_DIRECTORY
+
+.OK:
+        CMP AX, WORD[WORKING_DIRECTORY_FIRST_SECTOR]
+        JE .WORKING_DIRECTORY
+
+        MOV BX, DATA_BUFFER
+        MOV DL, BYTE[DRIVE_NUMBER]
+        CLC
+        JMP .NOT_WORKING_DIRECTORY
+
+.WORKING_DIRECTORY:
+        XOR BX, BX
+        MOV ES, BX
+        MOV BX, WORD[WORKING_DIRECTORY]
+        MOV DL, BYTE[DRIVE_NUMBER]
+        CLC
+
+.NOT_WORKING_DIRECTORY:
+        RET
+
+;
 RESTORE_WORKING_DIRECTORY:
 	PUSH AX
 	PUSH BX
