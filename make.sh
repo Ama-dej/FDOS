@@ -21,6 +21,7 @@ cd bin
 mv tetris.bin games/tetris.prg
 mv mines.bin games/mines.prg
 mv snake.bin games/snake.prg
+mv pong.bin games/pong.prg
 
 mv mandel.bin demo/mandel.prg
 mv fib.bin demo/fib.prg
