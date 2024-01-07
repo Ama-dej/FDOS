@@ -1,6 +1,105 @@
 ; PROCEDURES
 ; ----------
 
+; Sorts entries from lowest to highest.
+;
+; ES:SI <- Pointer to an array of entries.
+; CX <- Array length.
+SORT_ENTRIES:
+	PUSH AX
+	PUSH BX
+	PUSH CX
+	PUSH DX
+	PUSH SI
+	PUSH DI
+	PUSH DS
+	PUSH ES
+
+	MOV DX, CX
+	MOV CX, 11
+
+.NEXT_CHARACTER:
+	PUSH CX
+	MOV WORD[.OFFSET], CX
+	MOV CX, DX
+	DEC CX
+
+.NEXT_ENTRY:
+	PUSH CX
+	XOR CX, CX
+
+.LOOP:
+	MOV BX, CX
+	SHL BX, 5
+	ADD BX, SI
+
+	PUSH BX
+	ADD BX, WORD[.OFFSET]
+	DEC BX
+	MOV AL, BYTE[ES:BX]
+	MOV AH, BYTE[ES:BX + 32]
+	POP BX
+
+	CMP AL, AH
+	JBE .CONT
+
+	PUSH CX
+	PUSH SI
+
+	MOV CX, 32
+
+	MOV AX, ES
+	MOV DI, DS
+	MOV ES, DI
+	MOV DS, AX
+	MOV SI, BX
+	MOV DI, .TEMP_BUFFER
+	CALL MEMCPY
+
+	PUSH ES
+	MOV ES, AX
+	MOV DI, SI
+	ADD SI, 32
+	CALL MEMCPY
+
+	POP DS
+	MOV DI, SI
+	MOV SI, .TEMP_BUFFER
+	CALL MEMCPY
+
+	POP SI
+	POP CX
+
+.CONT:
+	POP AX 
+	PUSH AX
+	INC CX
+	CMP CX, AX 
+	JL .LOOP
+
+	POP CX
+	; DEC CX
+	; JNZ .NEXT_ENTRY
+	LOOP .NEXT_ENTRY
+
+	POP CX
+	; DEC CX
+	; JNZ .NEXT_CHARACTER
+	LOOP .NEXT_CHARACTER
+
+	POP ES
+	POP DS
+	POP DI
+	POP SI
+	POP DX
+	POP CX
+	POP BX
+	POP AX
+	RET
+
+.OFFSET: DW 0
+.TEMP_BUFFER: TIMES 32 DB 0
+
 ; Here to reuse code.
 ; Both interrupts for creating files and directories use literally the same code at the start.
 MAKE_ENTRY_PROC:
