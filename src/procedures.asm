@@ -1011,16 +1011,17 @@ UPDATE_FS_WRITE_INT:
 	POP AX
 	RET
 
-; DL <- Drive number. (slaba implementacija, če že hočem številko za disketno enoto bi rabu zahtevat tud podatke v zagonskem odseku?)
+; DL <- Drive number. (slaba implementacija, če že hočemštevilko za disketno enoto bi rabu zahtevat tud podatke v zagonskem odseku?)
+; ES:BX <- Lokacija, kamor nalo�imo FAT tabelo.
 LOAD_FAT:
         PUSHA
         PUSH ES
 
         MOV CX, WORD[SECTORS_PER_FAT]
 
-        XOR BX, BX
-        MOV ES, BX
-        MOV BX, FILESYSTEM
+        ; XOR BX, BX
+        ; MOV ES, BX
+        ; MOV BX, FILESYSTEM
 
         MOV AX, WORD[RESERVED_SECTORS]
         ; MOV DL, BYTE[DRIVE_NUMBER]

@@ -256,6 +256,9 @@ COPY_FILE_INT:
         JMP .RESTORE
 
 .RESTORE:
+	XOR BX, BX
+	MOV ES, BX
+	MOV BX, FILESYSTEM ; Ne vidim razloga, da ne bi tale dodatek delou (morm pa Åe zares testirat).
         CALL LOAD_FAT
 
         CMP AX, WORD[WORKING_DIRECTORY_FIRST_SECTOR]
