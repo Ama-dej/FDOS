@@ -1,6 +1,37 @@
 ; PROCEDURES
 ; ----------
 
+; AL <- Drive letter.
+;
+; DL -> Drive number.
+; CF -> Set if invalid letter.
+LETTER_TO_DRIVE:
+	CALL TO_UPPER
+
+	CMP AL, 'A'
+	JB .INVALID
+
+	CMP AL, 'Z'
+	JA .INVALID
+
+	MOV DL, AL
+
+	CMP AL, 'C'
+	JB .FLOPPY
+
+	ADD DL, 0x80 - 'C'
+	CLC
+	RET
+
+.FLOPPY:
+	SUB DL, 'A'
+	CLC
+	RET
+
+.INVALID:
+	STC
+	RET
+
 ; Sorts entries from lowest to highest.
 ;
 ; ES:SI <- Pointer to an array of entries.

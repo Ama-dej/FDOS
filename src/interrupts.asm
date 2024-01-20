@@ -28,6 +28,7 @@ DOS_INT:
 %INCLUDE "src/print_int.asm"
 %INCLUDE "src/scan_int.asm"
 %INCLUDE "src/printi_int.asm"
+%INCLUDE "src/printh_int.asm"
 %INCLUDE "src/readfile_int.asm"
 %INCLUDE "src/writefile_int.asm"
 %INCLUDE "src/change_directory_int.asm"
@@ -169,7 +170,8 @@ EXIT_INT_ADDRESS: DW EXIT_INT
 PRINT_INT_ADDRESS: DW PRINT_INT
 SCAN_INT_ADDRESS: DW SCAN_INT
 PRINTI_INT_ADDRESS: DW PRINTI_INT
-TIMES 12 DW RET_INT ; Space for more interrupts in the future.
+PRINTH_INT_ADDRESS: DW PRINTH_INT
+TIMES 11 DW RET_INT ; Space for more interrupts in the future.
 ; Filesystem routines.
 ; --------------------
 READFILE_INT_ADDRESS: DW READFILE_INT
