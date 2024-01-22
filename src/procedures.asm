@@ -1,6 +1,33 @@
 ; PROCEDURES
 ; ----------
 
+; DL <- Drive number.
+;
+; AL -> Drive letter.
+; CF -> Set if invalid drive number
+DRIVE_TO_LETTER:
+	CMP DL, 0x02
+	JB .FLOPPY
+
+	CMP DL, 0x80
+	JB .INVALID
+
+	CMP DL, 0x80 + 'Z' - 'C'
+	JA .INVALID
+
+	MOV AL, DL
+	ADD AL, 'C' - 0x80
+	RET
+
+.FLOPPY:
+	MOV AL, DL
+	ADD AL, 'A'
+	RET
+
+.INVALID:
+	STC
+	RET
+
 ; AL <- Drive letter.
 ;
 ; DL -> Drive number.
