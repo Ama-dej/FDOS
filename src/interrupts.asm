@@ -38,7 +38,8 @@ DOS_INT:
 %INCLUDE "src/copy_file_int.asm"
 %INCLUDE "src/command_parameters_int.asm"
 %INCLUDE "src/print_error_messages_int.asm"
-%INCLUDE "src/set_graphics_mode_int.asm"
+%INCLUDE "src/dos_text_mode_int.asm"
+%INCLUDE "src/graphics_mode_int.asm"
 %INCLUDE "src/put_pixel_int.asm"
 
 RET_WRITE_INT:
@@ -189,7 +190,8 @@ PRINT_ERROR_MESSAGES_INT_ADDRESS: DW PRINT_ERROR_MESSAGES_INT
 TIMES 14 DW RET_INT
 ; Graphics routines.
 ; ------------------
-SET_GRAPHICS_MODE_INT_ADDRESS: DW SET_GRAPHICS_MODE_INT
+SET_DOS_TEST_MODE_INT_ADDRESS: DW DOS_TEXT_MODE_INT
+SET_GRAPHICS_MODE_INT_ADDRESS: DW GRAPHICS_MODE_INT
 PUT_PIXEL_INT_ADDRESS: DW PUT_PIXEL_INT
 RETURN_FROM_INT_ADDRESS: TIMES 256 - ((RETURN_FROM_INT_ADDRESS - INT_JUMP_TABLE) / 2) DW RET_INT
 INT_JUMP_TABLE_END:

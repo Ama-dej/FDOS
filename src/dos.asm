@@ -584,9 +584,8 @@ ILLEGAL_DRIVE_MSG_END:
 ; Clears the screen.
 ; More specificaly sets the screen to whichever video mode the PC booted with (which is basically clearing the screen).
 CLS:
-	XOR AH, AH
-	MOV AL, BYTE[BOOT_VIDEO_MODE]
-	INT 0x10
+	MOV AH, 0x30
+	INT 0x80
 
 	JMP DOS_START
 
@@ -629,7 +628,7 @@ DIR:
 	MOV BX, DATA_BUFFER
 	
 	CALL TRAVERSE_PATH
-	JNC .OFFSET
+	JNC .IS_ROOT
 
 	SHR AX, 12
 	MOV AH, 0x21
@@ -642,10 +641,11 @@ DIR:
 	MOV ES, BX
 	MOV BX, WORD[WORKING_DIRECTORY]
 
+.IS_ROOT:
 	MOV AX, WORD[WORKING_DIRECTORY_FIRST_SECTOR]
 
 	TEST AX, AX
-	JNZ .OFFSET
+	JNZ .NOT_ROOT
 
 	CALL GET_DIRECTORY_SIZE
 	SHL CX, 5
@@ -664,21 +664,13 @@ DIR:
 	MOV BYTE[ES:DI], 0 ; prosm?
 
 	MOV BX, DATA_BUFFER
-
-	MOV SI, BX
 	SHR CX, 5
-	JMP .SORT
 
-.OFFSET:
+.NOT_ROOT:
 	; AND AX, 0x0FFF
 	MOV SI, BX
 	CALL GET_DIRECTORY_SIZE
 
-	ADD SI, 64
-	SUB CX, 2
-	JMP .SORT
-
-.SORT:
 	CMP CX, 1
 	JLE .PRINT_NAME_LOOP
 
