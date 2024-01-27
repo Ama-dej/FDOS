@@ -50,6 +50,10 @@
 
 	STI
 
+	MOV AH, 0x0F
+	INT 0x10
+	MOV BYTE[BOOT_VIDEO_MODE], AL
+
 	MOV AH, 0x01
 	MOV SI, DOS_STARTUP_MSG
 	MOV CX, DOS_STARTUP_MSG_END - DOS_STARTUP_MSG
@@ -400,6 +404,7 @@ ERROR_PRINT:
 ; COMMANDS
 ; --------
 
+; Boots from a drive with a bootable signature.
 BOOT:
 	MOV SI, COMMAND_PARSED
 	XOR AL, AL
@@ -468,6 +473,7 @@ CD:
 	
 	JMP DOS_START
 
+; Reads the filesystem info from a FAT12 formatted floppy disk in a specific drive.
 CHDSK:
 	MOV SI, COMMAND_PARSED
 	XOR AL, AL
@@ -576,12 +582,17 @@ ILLEGAL_DRIVE_MSG: DB "Illegal drive letter.", 0x0A, 0x0D
 ILLEGAL_DRIVE_MSG_END:
 
 ; Clears the screen.
-; More specificaly sets the screen to 80x25 CGA mode (which is basically clearing the screen).
+; More specificaly sets the screen to whichever video mode the PC booted with (which is basically clearing the screen).
 CLS:
-	MOV AX, 0x0003
+	XOR AH, AH
+	MOV AL, BYTE[BOOT_VIDEO_MODE]
 	INT 0x10
+
 	JMP DOS_START
 
+BOOT_VIDEO_MODE: DB 0
+
+; Copies a source file into a destination file.
 CP:
 	XOR AL, AL
 	MOV SI, COMMAND_PARSED
@@ -726,7 +737,7 @@ DIR:
 	CALL NLCR
 	JMP DOS_START
 
-
+; Lists information of drives detected by FDOS.
 LSDSK:
 	MOV AL, 'A'
 
@@ -834,6 +845,7 @@ DRIVE_ICON: DB 0xCD, 0xB8, 0xDC, 0xD5, 0xCD
 DRIVE_ICON_EMPTY: DB ' ', ' ', '/', ' ', ' '
 HDD_ICON: DB 0xDC, 0xDC, 0xDC, 0xD2, 0xDC
 
+; Creates a file.
 MK:
 	XOR AL, AL
 	MOV SI, COMMAND_PARSED
@@ -849,6 +861,7 @@ MK:
 
 	JMP DOS_START
 
+; Creates a directory.
 MKDIR:
 	XOR AL, AL
 	MOV SI, COMMAND_PARSED
@@ -1083,6 +1096,7 @@ REN:
 
 FILENAME_BUFFER: TIMES 11 DB 0
 
+; Removes a file or directory.
 RM:
 	XOR AL, AL
 	MOV SI, COMMAND_PARSED
@@ -1098,18 +1112,16 @@ RM:
 
 	JMP DOS_START
 
-; TODO:
-; - Testiri copy interrupt še v programu.
-; - Moderniziri read in write interrupte.
+; A command used for testing.
 TEST:
-	MOV AH, 0x16
-	MOV SI, IME
-	MOV DI, KAM
-	INT 0x80
+	; MOV AH, 0x16
+	; MOV SI, IME
+	; MOV DI, KAM
+	; INT 0x80
 
-	MOV DL, AL
-	MOV AH, 0x21
-	INT 0x80
+	; MOV DL, AL
+	; MOV AH, 0x21
+	; INT 0x80
 
 	JMP DOS_START
 
