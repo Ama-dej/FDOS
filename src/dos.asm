@@ -742,17 +742,12 @@ LSDSK:
 .LIST_LOOP:
 	CALL LETTER_TO_DRIVE
 
-	XOR AH, AH
-	INT 0x13
-	JC .ERROR
-
 	MOV SI, DRIVE_ICON
 
 	MOV BX, DOS_SEGMENT
 	MOV ES, BX
 	MOV BX, DATA_BUFFER
 	MOV CX, 1
-	MOV DI, 3
 
 .READ_LOOP:
 	PUSH AX
@@ -760,24 +755,20 @@ LSDSK:
 	MOV AL, 1
 	XOR DH, DH
 	INT 0x13
-	MOV DH, AL
+	MOV DH, AH
 	POP AX
 	JNC .PRINT_DRIVE
-
-	DEC DI
-	JNZ .READ_LOOP
-
-	; PUSHA
-	; MOV DL, DH
-	; XOR DH, DH
-	; MOV AH, 0x03
-	; INT 0x80
-	; POPA
 
 	CMP DH, 0x06
 	JE .PRINT_DRIVE
 
 	MOV SI, DRIVE_ICON_EMPTY
+
+	CMP AL, 'B'
+	JA .ERROR
+
+	CMP DH, 0x80
+	JNE .ERROR
 
 .PRINT_DRIVE:
 	MOV AH, 0x0E
@@ -831,6 +822,9 @@ LSDSK:
 	MOV AL, DH
 
 .ERROR:
+	XOR AH, AH
+	INT 0x13
+
 	INC AL
 	CMP AL, 'Z'
 	JBE .LIST_LOOP
@@ -839,8 +833,7 @@ LSDSK:
 	JMP DOS_START
 
 DRIVE_ICON: DB 0xCD, 0xB8, 0xDC, 0xD5, 0xCD
-; DRIVE_ICON_EMPTY: DB 0xCD, 0xB8, 0x20, 0xD5, 0xCD
-DRIVE_ICON_EMPTY: DB ' ', ' ', '/', ' ', ' '
+DRIVE_ICON_EMPTY: DB 0xCD, 0xB8, 0x20, 0xD5, 0xCD
 HDD_ICON: DB 0xDC, 0xDC, 0xDC, 0xD2, 0xDC
 
 ; Creates a file.
@@ -1112,19 +1105,22 @@ RM:
 
 ; A command used for testing.
 TEST:
-	; MOV AH, 0x16
-	; MOV SI, IME
-	; MOV DI, KAM
-	; INT 0x80
+	MOV AH, 0x02
+	MOV AL, 1
+	MOV DL, BYTE[DRIVE_NUMBER]
+	XOR DH, DH
+	MOV CX, 1
+	MOV BX, DOS_SEGMENT
+	MOV ES, BX
+	MOV BX, DATA_BUFFER
+	INT 0x13
 
-	; MOV DL, AL
-	; MOV AH, 0x21
-	; INT 0x80
+	MOV DL, AH
+	XOR DH, DH
+	MOV AH, 0x04
+	INT 0x80
 
 	JMP DOS_START
-
-IME: DB "/test_prg/games/mines.bin", 0
-KAM: DB "games/tetris.bin", 0
 
 %INCLUDE "src/procedures.asm"
 %INCLUDE "src/interrupts.asm"
