@@ -1635,25 +1635,37 @@ WRITE_DISK:
 ; DH <- Head number.
 ; DL <- Drive number.
 WRITE_CHS:
+        PUSH AX
         PUSH DI
         MOV DI, 3
 
+	CMP BYTE[DISKETTE_CHANGED], 1
+	JE .DISKETTE_CHANGED
+
 .READ_LOOP:
         STC
-        PUSH AX
         MOV AH, 0x03
         MOV AL, 1
         INT 0x13
-        POP AX
         JNC .OUT
+
+	CMP AH, 0x06
+	JE .DISKETTE_CHANGED
 
         DEC DI
         JNZ .READ_LOOP
+
+.OUT_CARRY:
         STC
 
 .OUT:
         POP DI
+        POP AX
         RET
+
+.DISKETTE_CHANGED:
+	CALL RELOAD_FILESYSTEM
+	JMP .OUT_CARRY
 
 ; AX <- LBA value.
 ; CL <- Number of sectors to read.
@@ -1688,25 +1700,157 @@ READ_DISK:
 ; DH <- Head number.
 ; DL <- Drive number.
 READ_CHS:
+        PUSH AX
         PUSH DI
         MOV DI, 3
 
+	CMP BYTE[DISKETTE_CHANGED], 1
+	JE .DISKETTE_CHANGED
+
 .READ_LOOP:
         STC
-        PUSH AX
         MOV AH, 0x02
         MOV AL, 1
         INT 0x13
-        POP AX
         JNC .OUT
+
+	CMP AH, 0x06
+	JE .DISKETTE_CHANGED
 
         DEC DI
         JNZ .READ_LOOP
+
+.OUT_CARRY:
         STC
 
 .OUT:
         POP DI
+        POP AX
         RET
+
+.DISKETTE_CHANGED:
+	CALL RELOAD_FILESYSTEM
+	JMP .OUT_CARRY
+
+; Reloads the current filesystem information in case of diskette change.
+RELOAD_FILESYSTEM:
+	PUSH AX
+	PUSH BX
+	PUSH CX
+	PUSH DX
+	PUSH SI
+	PUSH DI
+	PUSH DS
+	PUSH ES
+
+	MOV BYTE[DISKETTE_CHANGED], 0
+	MOV DL, BYTE[DRIVE_NUMBER]
+
+        XOR AH, AH
+        INT 0x13
+        JC .ERROR
+
+        MOV AL, 1
+        MOV CX, 1
+        XOR DH, DH
+	MOV BX, DOS_SEGMENT
+	MOV ES, BX
+        MOV BX, BPB 
+	CALL READ_CHS
+        JC .ERROR
+
+	XOR BX, BX
+	MOV ES, BX
+	MOV BX, FILESYSTEM
+        CALL LOAD_FAT
+        JC .ERROR
+
+        MOV BYTE[DRIVE_NUMBER], DL
+
+        XOR DX, DX
+        MOVZX AX, BYTE[SECTORS_PER_CLUSTER]
+        MUL WORD[BYTES_PER_SECTOR]
+        MOV WORD[BYTES_PER_CLUSTER], AX
+
+        XOR AH, AH
+        MOV AL, BYTE[NUMBER_OF_FAT]
+        MUL WORD[SECTORS_PER_FAT]
+
+        MOV CX, WORD[SECTORS_PER_FAT]
+        SHL CX, 9
+        ADD AX, WORD[RESERVED_SECTORS]
+
+        ADD CX, FILESYSTEM
+        MOV WORD[WORKING_DIRECTORY], CX
+
+        MOV BX, WORD[ROOT_ENTRIES]
+        SHL BX, 5
+        ADD BX, 511
+        SHR BX, 9
+        ADD AX, BX
+
+        MOV WORD[DATA_AREA_BEGIN], AX
+        MOV WORD[LAST_ALLOCATED_CLUSTER], 0
+	MOV WORD[DIRECTORY_RET_FIRST_SECTOR], 0
+
+        MOV AH, 0x12
+        MOV SI, ROOT_DIRECTORY_PATH
+        INT 0x20
+
+	TEST AL, AL
+	JNZ .ERROR
+
+        XOR BX, BX
+        MOV ES, BX
+        MOV BX, WORD[WORKING_DIRECTORY]
+        CALL GET_DIRECTORY_SIZE
+
+        MOV WORD[DIRECTORY_SIZE], CX
+	MOV WORD[DIRECTORY_RET_SIZE], CX
+
+        MOV AL, BYTE[SECTORS_PER_CLUSTER]
+        SHL AX, 9
+        CALL LOG2
+        MOV BYTE[LOG2_CLUSTER_SIZE], CL
+
+	XOR AL, AL
+	MOV DI, DIRECTORY_PATH
+	MOV CX, DIRECTORY_INFO_END - DIRECTORY_PATH
+	CALL MEMSET
+
+	MOV BYTE[SI], '/'
+	MOV WORD[PATH_LENGTH], 1
+
+	PUSH CX
+	NOT AL
+	MOV DI, FIRST_CLUSTERS
+	MOV CX, 16
+	CALL MEMSET
+	POP CX
+
+	MOV SI, DIRECTORY_PATH
+	MOV DI, DOS_SEGMENT
+	MOV ES, DI
+	MOV DI, PATH_INFO_BUFFER
+	CALL MEMCPY
+
+	CLC
+
+.OUT:
+	POP ES
+	POP DS
+	POP DI
+	POP SI
+	POP DX
+	POP CX
+	POP BX
+	POP AX
+	RET
+
+.ERROR:
+	MOV BYTE[DISKETTE_CHANGED], 1
+	STC
+	JMP .OUT
 
 ; AX <- LBA value.
 ;
