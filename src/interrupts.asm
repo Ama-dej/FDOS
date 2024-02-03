@@ -1,4 +1,4 @@
-; FDOS INTERRUPT (INT 0x80)
+; FDOS INTERRUPT (INT 0x20)
 ; -------------------------
 
 DOS_INT:

@@ -32,12 +32,6 @@ PUT_PIXEL_INT:
         POP DX
         POP CX
 
-        ; PUSHA
-        ; MOV DX, AX
-        ; MOV AH, 0x03
-        ; INT 0x80
-        ; POPA
-
         ADD DI, AX
 
         MOV AL, BL

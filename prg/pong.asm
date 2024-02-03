@@ -175,7 +175,7 @@ GAME_LOOP:
 
 	MOV DX, WORD[LEFT_SCORE]
 	MOV AH, 0x03
-	INT 0x80 ; učinkovitost
+	INT 0x20 ; učinkovitost
 
 	MOV AH, 0x02
 	MOV BH, 0
@@ -185,7 +185,7 @@ GAME_LOOP:
 
 	MOV DX, WORD[RIGHT_SCORE]
 	MOV AH, 0x03
-	INT 0x80
+	INT 0x20
 
 GET_KEY:
 	MOV AH, 0x01
@@ -299,10 +299,10 @@ DELAY:
 
 EXIT:
 	MOV AH, 0x30
-	INT 0x80
+	INT 0x20
 
 	XOR AH, AH
-	INT 0x80
+	INT 0x20
 
 ; AL -> ASCII character to write.
 ; BL -> Character attribute (text), foreground colour (graphics).

@@ -182,7 +182,7 @@ REMOVE_ENTRY_INT:
 
         MOV AH, 0x12
         MOV SI, BACK_CMD
-        INT 0x80 ; Problem je, da ne preverjam, ali je ta stvar uspela ali ne.
+        INT 0x20 ; Problem je, da ne preverjam, ali je ta stvar uspela ali ne.
 
         CMP DI, WORD[DIRECTORY_RET_FIRST_SECTOR]
         JNE .OUT

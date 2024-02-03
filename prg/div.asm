@@ -18,7 +18,7 @@ START:
 
 	MOV DX, AX
 	MOV AH, 0x03
-	INT 0x80
+	INT 0x20
 
 	MOV AH, 0x0E
 	MOV AL, ' '
@@ -26,7 +26,7 @@ START:
 
 	MOV AH, 0x03
 	POP DX
-	INT 0x80
+	INT 0x20
 
 	MOV AH, 0x0E
 	MOV AL, 0x0D
@@ -35,7 +35,7 @@ START:
 	INT 0x10
 
 	XOR AH, AH
-	INT 0x80
+	INT 0x20
 
 ; AX <- Divident
 ; BX <- Divizor

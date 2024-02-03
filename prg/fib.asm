@@ -22,7 +22,7 @@ LOOP:
 	MOV DX, BX
 	
 	MOV AH, 0x03
-	INT 0x80
+	INT 0x20
 
 	MOV AH, 0x0E
 	MOV AL, 0x0A
@@ -35,4 +35,4 @@ LOOP:
 	JNZ LOOP
 
 	XOR AH, AH
-	INT 0x80
+	INT 0x20

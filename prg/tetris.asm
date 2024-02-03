@@ -786,10 +786,10 @@ EXIT:
 
 .CONTINUE:
 	MOV AH, 0x30
-	INT 0x80
+	INT 0x20
 
 	XOR AH, AH
-	INT 0x80
+	INT 0x20
 
 ; Prints a message on the screen.
 ;
@@ -887,7 +887,7 @@ SAVE_HIGH_SCORE:
 	MOV DX, HIGH_SCORE
 	XOR DI, DI
 	MOV SI, FILENAME
-	INT 0x80
+	INT 0x20
 
 	POPA
 	RET

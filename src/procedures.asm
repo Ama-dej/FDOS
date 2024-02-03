@@ -1214,12 +1214,12 @@ PRINT_FILE_SIZE:
         CALL GET_FILE_SIZE
 
         MOV AH, 0x03
-        INT 0x80
+        INT 0x20
 
 	MOV AH, 0x01
 	MOV SI, KIB_SUFFIX
 	MOV CX, 4
-	INT 0x80
+	INT 0x20
 
         POP SI
         POP DX

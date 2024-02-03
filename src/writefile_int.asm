@@ -234,13 +234,6 @@ WRITEFILE_INT:
         MOV SI, DOS_SEGMENT
         MOV DS, SI
 
-        ; PUSHA
-        ; MOV AH, 0x03
-        ; MOV DX, CX
-        ; INT 0x80
-        ; CALL NLCR
-        ; POPA
-
         PUSH DX
         MOV DL, BYTE[DRIVE_NUMBER]
         CALL WRITE_DATA

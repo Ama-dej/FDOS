@@ -246,10 +246,10 @@ WAIT_FOR_R:
 
 EXIT:
 	MOV AH, 0x30
-	INT 0x80
+	INT 0x20
 
 	XOR AH, AH
-	INT 0x80
+	INT 0x20
 
 ; Writes n amount of coloured characters on a given location.
 ;
