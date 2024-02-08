@@ -895,7 +895,6 @@ SAVE_HIGH_SCORE:
 DRIVE_NUMBER: DB 0
 FILENAME: DB "TETRIS.PRG", 0x00
 
-DISK_ERROR: DB "Read failed, press any key to reboot.", 0x00
 NEXT_MSG: DB "NEXT", 0x00
 GAME: DB "Game", 0x00
 OVER: DB "over", 0x00

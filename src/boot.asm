@@ -44,7 +44,8 @@ ENFORCE_CS:
 	; MOV AH, 0x08
 	; INT 0x13 ; Get diskette info.
 
-	; MOVZX AX, CL
+	; MOV AL, CL
+	; XOR AH, AH
 	; AND AL, 0x3F
 	; MOV WORD[SECTORS_PER_TRACK], AX
 
@@ -75,7 +76,8 @@ READ_FAT_LOOP: ; In case the first fat table is broken try to load the redundant
 	JMP READ_FAT_LOOP
 
 .OK:
-	MOVZX AX, BYTE[NUMBER_OF_FAT]
+	MOV AL, BYTE[NUMBER_OF_FAT]
+	XOR AH, AH
 	MUL WORD[SECTORS_PER_FAT]
 	PUSH AX
 
@@ -97,9 +99,6 @@ READ_FAT_LOOP: ; In case the first fat table is broken try to load the redundant
 	CALL READ_DISK
 	JC ERROR
 
-	; CLI
-	; HLT
-
 	MOV AX, WORD[BX + 26] ; Get the first sector of the DOS.SYS file.
 	MOV WORD[EXPLORER_FIRST_SECTOR], AX
 
@@ -115,7 +114,8 @@ READ_DOS:
 	PUSH AX
 
 	SUB AX, 2
-	MOVZX CX, BYTE[SECTORS_PER_CLUSTER]
+	MOV CL, BYTE[SECTORS_PER_CLUSTER]
+	XOR CH, CH
 	MUL CX
 
 	ADD AX, DI
@@ -126,7 +126,8 @@ READ_DOS:
 	CALL READ_DISK
 	JC ERROR
 
-	MOVZX AX, CL
+	MOV AL, CL
+	XOR AH, AH
 	MUL WORD[BYTES_PER_SECTOR]
 
 	ADD BX, AX 
@@ -184,10 +185,16 @@ ERROR:
 ; DL <- Drive number.
 ; ES:BX <- Pointer to buffer.
 READ_DISK:
-	PUSHA
+	PUSH AX
+	PUSH BX
+	PUSH CX
+	PUSH DX
+	PUSH SI
+	PUSH DI
 	PUSH ES
 
-	MOVZX DI, CL
+	XOR CH, CH
+	MOV DI, CX
 
 .READ_LOOP:
 	CALL LBA_TO_CHS
@@ -204,7 +211,12 @@ READ_DISK:
 
 .RETURN:
 	POP ES
-	POPA
+	POP DI
+	POP SI
+	POP DX
+	POP CX
+	POP BX
+	POP AX
 	RET
 
 ; ES:BX <- Pointer to target buffer.

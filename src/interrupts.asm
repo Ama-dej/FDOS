@@ -14,7 +14,8 @@ DOS_INT:
 
         MOV BYTE[INT_RET_CODE], 0x00
 
-        MOVZX BX, AH
+	MOV BL, AH
+	XOR BH, BH
         SHL BX, 1
         ADD BX, INT_JUMP_TABLE
         MOV AX, WORD[BX]

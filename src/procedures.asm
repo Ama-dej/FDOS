@@ -701,7 +701,9 @@ TEMP_LENGTH: DB 0
 
 CLUSTER_BACK:
 	PUSH BX 
-	MOVZX BX, BYTE[TEMP_LENGTH]
+	; MOVZX BX, BYTE[TEMP_LENGTH]
+	MOV BL, BYTE[TEMP_LENGTH]
+	XOR BH, BH
 	DEC BX
 	MOV BYTE[TEMP_LENGTH], BL
 	SHL BX, 1
@@ -712,7 +714,9 @@ CLUSTER_BACK:
 
 CLUSTER_FORWARD:
 	PUSH BX
-	MOVZX BX, BYTE[TEMP_LENGTH]
+	; MOVZX BX, BYTE[TEMP_LENGTH]
+	MOV BL, BYTE[TEMP_LENGTH]
+	XOR BH, BH
 	INC BYTE[TEMP_LENGTH]
 	SHL BX, 1
 	ADD BX, TEMP_ARRAY
@@ -896,7 +900,13 @@ FINDCHAR:
 ; ES:BX <- Where to load the directory.
 ; DL <- Drive number. (NE VEČ)
 LOAD_DIRECTORY:
-	PUSHA
+	PUSH AX
+	PUSH BX
+	PUSH CX
+	PUSH DX
+	PUSH SI
+	PUSH DI
+
 	MOV DL, BYTE[DRIVE_NUMBER]
 
 	TEST AX, AX
@@ -913,7 +923,9 @@ LOAD_DIRECTORY:
 
 .ROOT_DIRECTORY:
 	PUSH DX
-        MOVZX AX, BYTE[NUMBER_OF_FAT]
+        ; MOVZX AX, BYTE[NUMBER_OF_FAT]
+	MOV AL, BYTE[NUMBER_OF_FAT]
+	XOR AH, AH
         MUL WORD[SECTORS_PER_FAT]
         ADD AX, WORD[RESERVED_SECTORS]
 	POP DX
@@ -925,7 +937,12 @@ LOAD_DIRECTORY:
         CALL READ_DISK
 
 .OUT:
-	POPA
+	POP DI
+	POP SI
+	POP DX
+	POP CX
+	POP BX
+	POP AX
 	RET
 
 ; AX <- First sector of the directory.
@@ -933,7 +950,13 @@ LOAD_DIRECTORY:
 ; CX <- Size of the directory (in entries).
 ; DL <- Drive number. (NE VEČ)
 STORE_DIRECTORY:
-	PUSHA
+	PUSH AX
+	PUSH BX
+	PUSH CX
+	PUSH DX
+	PUSH SI
+	PUSH DI
+
 	MOV DL, BYTE[DRIVE_NUMBER]
 
 	TEST AX, AX
@@ -985,7 +1008,9 @@ STORE_DIRECTORY:
 
 .ROOT_DIRECTORY:
 	PUSH DX
-        MOVZX AX, BYTE[NUMBER_OF_FAT]
+        ; MOVZX AX, BYTE[NUMBER_OF_FAT]
+	MOV AL, BYTE[NUMBER_OF_FAT]
+	XOR AH, AH
         MUL WORD[SECTORS_PER_FAT]
         ADD AX, WORD[RESERVED_SECTORS]
 	POP DX
@@ -997,7 +1022,12 @@ STORE_DIRECTORY:
         CALL WRITE_DISK
 
 .OUT:
-	POPA
+	POP DI
+	POP SI
+	POP DX
+	POP CX
+	POP BX
+	POP AX
 	RET
 
 ; Turns on the PC speaker.
@@ -1084,7 +1114,12 @@ UPDATE_FS_WRITE_INT:
 ; DL <- Drive number. (slaba implementacija, če že hočemštevilko za disketno enoto bi rabu zahtevat tud podatke v zagonskem odseku?)
 ; ES:BX <- Lokacija, kamor nalo�imo FAT tabelo.
 LOAD_FAT:
-        PUSHA
+	PUSH AX
+	PUSH BX
+	PUSH CX
+	PUSH DX
+	PUSH SI
+	PUSH DI
         PUSH ES
 
         MOV CX, WORD[SECTORS_PER_FAT]
@@ -1106,12 +1141,22 @@ LOAD_FAT:
         JNZ .LOAD_LOOP
 
         POP ES
-        POPA
+	POP DI
+	POP SI
+	POP DX
+	POP CX
+	POP BX
+	POP AX
         RET
 
 ; DL <- Drive number. (isti komentar kot pri STORE_FAT)
 STORE_FAT:
-        PUSHA
+	PUSH AX
+	PUSH BX
+	PUSH CX
+	PUSH DX
+	PUSH SI
+	PUSH DI
         PUSH ES
 
         MOV CX, WORD[SECTORS_PER_FAT]
@@ -1133,7 +1178,12 @@ STORE_FAT:
         JNZ .STORE_LOOP
 
         POP ES
-        POPA
+	POP DI
+	POP SI
+	POP DX
+	POP CX
+	POP BX
+	POP AX
         RET
 
 ; SI <- Filename to convert.
@@ -1141,7 +1191,12 @@ STORE_FAT:
 ;
 ; CF -> Cleared if successful.
 CONVERT_TO_8_3:
-        PUSHA
+	PUSH AX
+	PUSH BX
+	PUSH CX
+	PUSH DX
+	PUSH SI
+	PUSH DI
 
         MOV AL, ' '
         MOV CX, 11
@@ -1201,7 +1256,12 @@ CONVERT_TO_8_3:
 	LOOP .LOOPCIC
 
 .OUT:
-        POPA
+	POP DI
+	POP SI
+	POP DX
+	POP CX
+	POP BX
+	POP AX
         RET
 
 ; DX <- File size.
@@ -1450,7 +1510,9 @@ WRITE_DATA:
 
 	PUSH DX
         SUB AX, 2
-        MOVZX CX, BYTE[SECTORS_PER_CLUSTER]
+        ; MOVZX CX, BYTE[SECTORS_PER_CLUSTER]
+	MOV CL, BYTE[SECTORS_PER_CLUSTER]
+	XOR CH, CH
         MUL CX 
 	POP DX
 
@@ -1472,7 +1534,9 @@ READ_DATA:
 
 	PUSH DX
         SUB AX, 2
-        MOVZX CX, BYTE[SECTORS_PER_CLUSTER]
+        ; MOVZX CX, BYTE[SECTORS_PER_CLUSTER]
+	MOV CL, BYTE[SECTORS_PER_CLUSTER]
+	XOR CH, CH
         MUL CX 
 	POP DX
 
@@ -1606,10 +1670,17 @@ GET_NEXT_CLUSTER:
 ; DL <- Drive number.
 ; ES:BX <- Pointer to buffer.
 WRITE_DISK:
-        PUSHA
+	PUSH AX
+	PUSH BX
+	PUSH CX
+	PUSH DX
+	PUSH SI
+	PUSH DI
         PUSH ES
 
-        MOVZX DI, CL
+        ; MOVZX DI, CL
+	XOR CH, CH
+	MOV DI, CX
 
 .WRITE_LOOP:
         CALL LBA_TO_CHS
@@ -1626,7 +1697,12 @@ WRITE_DISK:
 
 .RETURN:
         POP ES
-        POPA
+	POP DI
+	POP SI
+	POP DX
+	POP CX
+	POP BX
+	POP AX
         RET
 
 ; ES:BX <- Pointer to buffer to be written.
@@ -1675,10 +1751,17 @@ WRITE_CHS:
 ; DL <- Drive number.
 ; ES:BX <- Pointer to buffer.
 READ_DISK:
-        PUSHA
+	PUSH AX
+	PUSH BX
+	PUSH CX
+	PUSH DX
+	PUSH SI
+	PUSH DI
         PUSH ES
 
-        MOVZX DI, CL
+        ; MOVZX DI, CL
+	XOR CH, CH
+	MOV DI, CX
 
 .READ_LOOP:
         CALL LBA_TO_CHS
@@ -1694,7 +1777,12 @@ READ_DISK:
 
 .RETURN:
         POP ES
-        POPA
+	POP DI
+	POP SI
+	POP DX
+	POP CX
+	POP BX
+	POP AX
         RET
 
 ; ES:BX <- Pointer to target buffer.
@@ -1777,7 +1865,9 @@ RELOAD_FILESYSTEM:
         MOV BYTE[DRIVE_NUMBER], DL
 
         XOR DX, DX
-        MOVZX AX, BYTE[SECTORS_PER_CLUSTER]
+        ; MOVZX AX, BYTE[SECTORS_PER_CLUSTER]
+	MOV AL, BYTE[SECTORS_PER_CLUSTER]
+	XOR AH, AH
         MUL WORD[BYTES_PER_SECTOR]
         MOV WORD[BYTES_PER_CLUSTER], AX
 
