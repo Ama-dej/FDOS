@@ -77,7 +77,12 @@ COPY_FILE_INT:
         CALL TRAVERSE_PATH
         JNC .NO_ERROR
 
-        SHR AX, 12
+        ; SHR AX, 12
+	ROL AX, 1
+	ROL AX, 1
+	ROL AX, 1
+	ROL AX, 1
+	AND AX, 0x000F
         MOV BYTE[INT_RET_CODE], AL
         JMP RET_CODE_INT
 
@@ -184,7 +189,12 @@ COPY_FILE_INT:
 
         CALL GET_DIRECTORY_SIZE
 
-        SHL CX, 5
+        ; SHL CX, 5
+	SHL CX, 1
+	SHL CX, 1
+	SHL CX, 1
+	SHL CX, 1
+	SHL CX, 1
         ADD BX, CX
         INC BX
 

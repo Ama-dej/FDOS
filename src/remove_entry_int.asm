@@ -72,7 +72,12 @@ REMOVE_ENTRY_INT:
         CALL TRAVERSE_PATH
         JNC .NO_ERROR
 
-        SHR AX, 12
+        ; SHR AX, 12
+	ROL AX, 1
+	ROL AX, 1
+	ROL AX, 1
+	ROL AX, 1
+	AND AX, 0x000F
         MOV BYTE[INT_RET_CODE], AL
         JMP RET_CODE_INT
 

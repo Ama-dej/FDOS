@@ -88,7 +88,12 @@ SORT_ENTRIES:
 
 .LOOP:
 	MOV BX, CX
-	SHL BX, 5
+	; SHL BX, 5
+	SHL BX, 1
+	SHL BX, 1
+	SHL BX, 1
+	SHL BX, 1
+	SHL BX, 1
 	ADD BX, SI
 
 	PUSH BX
@@ -194,7 +199,12 @@ MAKE_ENTRY_PROC:
         CALL CONVERT_LE_AND_TRAVERSE
         JNC .OK
 
-        SHR AX, 12
+        ; SHR AX, 12
+	ROL AX, 1
+	ROL AX, 1
+	ROL AX, 1
+	ROL AX, 1
+	AND AX, 0x000F
         MOV BYTE[INT_RET_CODE], AL
         STC
         JMP .NOT_WORKING_DIRECTORY
@@ -481,7 +491,12 @@ IS_PATH_VALID:
 PATH_ERRORS:
 	MOV SP, BP
 
-	SHR AX, 12
+	; SHR AX, 12
+	ROL AX, 1
+	ROL AX, 1
+	ROL AX, 1
+	ROL AX, 1
+	AND AX, 0x000F
 
         CMP AX, 1
         JE DIR_NOT_FOUND
@@ -633,7 +648,12 @@ TRAVERSE_PATH:
 
 	CALL GET_DIRECTORY_SIZE
 	INC CX
-	SHL CX, 5
+	; SHL CX, 5
+	SHL CX, 1
+	SHL CX, 1
+	SHL CX, 1
+	SHL CX, 1
+	SHL CX, 1
 	MOV SI, DATA_BUFFER
 	MOV DI, WORD[DIRECTORY_TARGET_SEGMENT]
 	MOV ES, DI
@@ -932,7 +952,11 @@ LOAD_DIRECTORY:
 
         MOV CX, WORD[ROOT_ENTRIES]
         ADD CX, 15
-        SHR CX, 4
+        ; SHR CX, 4
+	SHR CX, 1
+	SHR CX, 1
+	SHR CX, 1
+	SHR CX, 1
 
         CALL READ_DISK
 
@@ -1017,7 +1041,11 @@ STORE_DIRECTORY:
 
         MOV CX, WORD[ROOT_ENTRIES]
         ADD CX, 15
-        SHR CX, 4
+        ; SHR CX, 4
+	SHR CX, 1
+	SHR CX, 1
+	SHR CX, 1
+	SHR CX, 1
 
         CALL WRITE_DISK
 
@@ -1056,7 +1084,11 @@ PUTH8:
         MOV CX, 2
 
 .LOOP:
-        ROL BL, 4
+        ; ROL BL, 4
+	ROL BL, 1
+	ROL BL, 1
+	ROL BL, 1
+	ROL BL, 1
         MOV AL, BL
         AND AL, 0x0F
 
@@ -1303,9 +1335,23 @@ GET_FILE_SIZE:
 
         MOV AX, WORD[ES:BX + 30]
         ADC AX, 0
-        SHL AX, 6
+        ; SHL AX, 6
+	SHL AX, 1
+	SHL AX, 1
+	SHL AX, 1
+	SHL AX, 1
+	SHL AX, 1
+	SHL AX, 1
 
-        SHR DX, 10
+        ; SHR DX, 10
+	ROL DX, 1
+	ROL DX, 1
+	ROL DX, 1
+	ROL DX, 1
+	ROL DX, 1
+	ROL DX, 1
+	AND DX, 0x003F
+	
         ADD DX, AX
 
         POP AX
@@ -1569,7 +1615,11 @@ WRITE_CLUSTER:
         TEST AX, 1
         JZ .EVEN_CLUSTER
 
-        SHL DX, 4
+        ; SHL DX, 4
+	SHL DX, 1
+	SHL DX, 1
+	SHL DX, 1
+	SHL DX, 1
         AND WORD[ES:BX], 0x000F
         OR WORD[ES:BX], DX
         JMP .ODD_CLUSTER
@@ -1619,7 +1669,11 @@ GET_FREE_CLUSTER:
         JMP .SEARCH
 
 .EVEN_CLUSTER:
-        SHR AX, 4
+        ; SHR AX, 4
+	SHR AX, 1
+	SHR AX, 1
+	SHR AX, 1
+	SHR AX, 1
         POP AX
         JZ .OUT
         INC AX
@@ -1657,7 +1711,11 @@ GET_NEXT_CLUSTER:
         MOV AX, WORD[ES:BX]
         JZ .EVEN_CLUSTER
 
-        SHR AX, 4
+        ; SHR AX, 4
+	SHR AX, 1
+	SHR AX, 1
+	SHR AX, 1
+	SHR AX, 1
         JMP .ODD_CLUSTER
 
 .EVEN_CLUSTER:
@@ -1879,16 +1937,30 @@ RELOAD_FILESYSTEM:
         MUL WORD[SECTORS_PER_FAT]
 
         MOV CX, WORD[SECTORS_PER_FAT]
-        SHL CX, 9
+        ; SHL CX, 9
+	SHL CX, 1
+	SHL CX, 1
+	SHL CX, 1
+	SHL CX, 1
+	SHL CX, 1
+	SHL CX, 1
+	SHL CX, 1
+	SHL CX, 1
+	SHL CX, 1
         ADD AX, WORD[RESERVED_SECTORS]
 
         ADD CX, FILESYSTEM
         MOV WORD[WORKING_DIRECTORY], CX
 
         MOV BX, WORD[ROOT_ENTRIES]
-        SHL BX, 5
-        ADD BX, 511
-        SHR BX, 9
+        ; SHL BX, 5
+        ; ADD BX, 511
+        ; SHR BX, 9
+	ADD BX, 15
+	SHR BX, 1
+	SHR BX, 1
+	SHR BX, 1
+	SHR BX, 1
         ADD AX, BX
 
         MOV WORD[DATA_AREA_BEGIN], AX
@@ -1911,7 +1983,16 @@ RELOAD_FILESYSTEM:
 	MOV WORD[DIRECTORY_RET_SIZE], CX
 
         MOV AL, BYTE[SECTORS_PER_CLUSTER]
-        SHL AX, 9
+        ; SHL AX, 9
+	SHL AX, 1
+	SHL AX, 1
+	SHL AX, 1
+	SHL AX, 1
+	SHL AX, 1
+	SHL AX, 1
+	SHL AX, 1
+	SHL AX, 1
+	SHL AX, 1
         CALL LOG2
         MOV BYTE[LOG2_CLUSTER_SIZE], CL
 
@@ -1970,10 +2051,21 @@ LBA_TO_CHS:
 
         XOR DX, DX
         DIV WORD[HEAD_COUNT]
-        SHL DX, 8 ; Get the head number.
+        ; SHL DX, 8 ; Get the head number.
+	SHL DX, 1
+	SHL DX, 1
+	SHL DX, 1
+	SHL DX, 1
+	SHL DX, 1
+	SHL DX, 1
+	SHL DX, 1
+	SHL DX, 1
 
         MOV CH, AL
-        SHL AH, 6
+        ; SHL AH, 6
+	ROR AH, 1
+	ROR AH, 1
+	AND AH, 0xC0
         OR CL, AH ; Get the number of tracks/cylinders.
 
         MOV AL, DH

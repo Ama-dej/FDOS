@@ -21,7 +21,9 @@ PUT_PIXEL_INT:
         MOV ES, AX
 
         MOV AX, BX
-        SHR AX, 2
+        ; SHR AX, 2
+	SHR AX, 1
+	SHR AX, 1
         MOV DI, AX
 
         PUSH CX

@@ -3,7 +3,11 @@ PRINTH_INT:
 	MOV CX, 4
 
 .PRINT_LOOP:
-	ROL DX, 4
+	; ROL DX, 4
+	ROL DX, 1
+	ROL DX, 1
+	ROL DX, 1
+	ROL DX, 1
 
 	MOV AL, DL
 	AND AL, 0x0F

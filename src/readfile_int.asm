@@ -108,7 +108,11 @@ READFILE_INT:
         SBB WORD[FILE_SIZE_UPPER], 0
 
         PUSH BX
-        SHR BX, 4
+        ; SHR BX, 4
+	SHR BX, 1
+	SHR BX, 1
+	SHR BX, 1
+	SHR BX, 1
         AND BX, 0xFFF0
         MOV SI, ES
         ADD SI, BX
@@ -195,10 +199,18 @@ READFILE_INT:
         SUB CX, WORD[BYTES_PER_CLUSTER]
 
         MOV DI, WORD[BYTES_PER_CLUSTER]
-        SHR DI, 4
+        ; SHR DI, 4
+	SHR DI, 1
+	SHR DI, 1
+	SHR DI, 1
+	SHR DI, 1
 
         PUSH DX
-        SHR DX, 4
+        ; SHR DX, 4
+	SHR DX, 1
+	SHR DX, 1
+	SHR DX, 1
+	SHR DX, 1
 
         MOV SI, ES
         ADD SI, DI

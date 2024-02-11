@@ -2,7 +2,16 @@
 ; -------------------------
 
 DOS_INT:
-        PUSHA
+        ; PUSHA
+	PUSH AX
+	PUSH BX
+	PUSH CX
+	PUSH DX
+	PUSH SP
+	PUSH BP
+	PUSH SI
+	PUSH DI
+
 	PUSH DS
 	PUSH ES
 
@@ -84,7 +93,16 @@ RET_WRITE_INT:
 RW_RET_INT:
 	POP ES
 	POP DS
-	POPA
+
+	POP DI
+	POP SI
+	POP BP
+	POP SP
+	POP DX
+	POP CX
+	POP BX
+	POP AX
+
 	PUSH DS
 	MOV CX, DOS_SEGMENT
 	MOV DS, CX
@@ -96,7 +114,16 @@ RW_RET_INT:
 RET_CODE_INT:
 	POP ES
 	POP DS
-        POPA
+
+	POP DI
+	POP SI
+	POP BP
+	POP SP
+	POP DX
+	POP CX
+	POP BX
+	POP AX
+
         PUSH BX
         PUSH DS 
         MOV BX, DOS_SEGMENT
@@ -109,7 +136,16 @@ RET_CODE_INT:
 RET_INT:
 	POP ES
 	POP DS
-        POPA
+
+	POP DI
+	POP SI
+	POP BP
+	POP SP
+	POP DX
+	POP CX
+	POP BX
+	POP AX
+
         IRET
 
 INT_READ_ERROR:

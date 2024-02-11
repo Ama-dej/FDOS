@@ -30,7 +30,10 @@ SCAN_INT:
         CMP SI, DX
         JE .SCAN_LOOP
 
-        PUSHA
+	PUSH AX
+	PUSH BX
+	PUSH CX
+	PUSH DX
         MOV AH, 0x03
         MOV BH, 0
         INT 0x10
@@ -51,7 +54,10 @@ SCAN_INT:
         MOV BL, 7
         MOV CX, 1
         INT 0x10
-        POPA
+	POP DX
+	POP CX
+	POP BX
+	POP AX
 
         DEC SI
         MOV BYTE[SI], 0x00

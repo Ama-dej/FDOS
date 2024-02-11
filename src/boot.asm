@@ -287,12 +287,9 @@ LBA_TO_CHS:
 
 	MOV CH, AL
 	; SHL AH, 6
-	SHL AH, 1
-	SHL AH, 1
-	SHL AH, 1
-	SHL AH, 1
-	SHL AH, 1
-	SHL AH, 1
+	ROR AH, 1
+	ROR AH, 1
+	AND AH, 0xC0
 	OR CL, AH ; Get the number of tracks/cylinders.
 
 	POP AX

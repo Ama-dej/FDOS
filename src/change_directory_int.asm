@@ -10,7 +10,12 @@ CHANGE_DIRECTORY_INT:
         CALL TRAVERSE_PATH
         JNC .OK
 
-        SHR AX, 12
+        ; SHR AX, 12
+	ROL AX, 1
+	ROL AX, 1
+	ROL AX, 1
+	ROL AX, 1
+	AND AX, 0x000F
         MOV DX, DOS_SEGMENT
         MOV ES, DX
 

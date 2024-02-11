@@ -1,7 +1,15 @@
 ; AH = 0x00
 ; Returns from the program to 16-DOS.
 EXIT_INT:
-        POPA
+        ; POPA
+	POP DI
+	POP SI
+	POP BP
+	POP SP
+	POP DX
+	POP CX
+	POP BX
+	POP AX
 
         MOV AX, DOS_SEGMENT
         MOV DS, AX
