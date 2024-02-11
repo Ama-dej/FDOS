@@ -3,13 +3,14 @@
 ; CX = Number of bytes to print.
 PRINT_INT:
         CLD
-        MOV AH, 0x0E
 
 .PRINT_LOOP:
         TEST CX, CX
         JZ .OUT
 
         LODSB
+        MOV AH, 0x0E
+	MOV BX, 7
         INT 0x10
 
         DEC CX

@@ -1364,6 +1364,7 @@ NLCR:
         MOV AH, 0x0E
         MOV AL, 0x0A
         INT 0x10
+	MOV AH, 0x0E
         MOV AL, 0x0D
         INT 0x10
 
@@ -1373,10 +1374,13 @@ NLCR:
 ; AL <- Character to print out.
 PUTCHAR:
         PUSH AX
+	PUSH BX
 
         MOV AH, 0x0E
+	MOV BX, 7
         INT 0x10
 
+	POP BX
         POP AX
         RET
 
@@ -1429,18 +1433,17 @@ PRINT_FILENAME:
         PUSH BX
         PUSH CX
 
-        MOV AH, 0x0E
         MOV CX, 11
 
 .PRINT_LOOP:
         MOV AL, BYTE[ES:BX]
-        INT 0x10
+	CALL PUTCHAR
 
         CMP CX, 4
         JNE .NOT_DOT
 
         MOV AL, '.'
-        INT 0x10
+	CALL PUTCHAR
 
 .NOT_DOT:
         INC BX

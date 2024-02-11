@@ -16,7 +16,6 @@ PRINT_ERROR_MESSAGES_INT:
         SHL BX, 1
         ADD BX, ERROR_MSG_ADDRESS_START
 
-        MOV AH, 0x0E
         MOV SI, WORD[BX]
 
 .PRINT_LOOP:
@@ -25,11 +24,15 @@ PRINT_ERROR_MESSAGES_INT:
         TEST AL, AL
         JZ .STRING_END
 
+        MOV AH, 0x0E
+	MOV BX, 7
         INT 0x10
 
         JMP .PRINT_LOOP
 
 .STRING_END:
+        MOV AH, 0x0E
+	MOV BX, 7
         MOV AL, '.'
         INT 0x10
 

@@ -13,6 +13,9 @@ SCAN_INT:
         CMP AL, 0x0D
         JE RET_INT
 
+	CMP AL, 0x0A
+	JE RET_INT
+
         CMP AL, 0x08
         JE .BACKSPACE_PRESSED
 
@@ -51,7 +54,7 @@ SCAN_INT:
 
         MOV AH, 0x0A
         MOV AL, ' '
-        MOV BL, 7
+	MOV BX, 7
         MOV CX, 1
         INT 0x10
 	POP DX
