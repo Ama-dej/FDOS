@@ -1,3 +1,4 @@
+CPU 8086
 [BITS 16]
 [ORG 0x0000]
 
@@ -165,7 +166,15 @@ CHECK_FRUIT_OVERLAP:
 
 	MOV AX, CX
 
-	SHL DX, 8
+	; SHL DX, 8
+	SHL DX, 1
+	SHL DX, 1
+	SHL DX, 1
+	SHL DX, 1
+	SHL DX, 1
+	SHL DX, 1
+	SHL DX, 1
+	SHL DX, 1
 	MOV CX, DX ; Save the remainder for later.
 
 	XOR DX, DX

@@ -1,3 +1,4 @@
+CPU 8086
 [BITS 16]
 [ORG 0x0000]
 
@@ -176,6 +177,7 @@ PRINT_FIELD:
 	
 .LIGHT:
 	MOV AH, 0x09
+	MOV AL, ' '
 	INT 0x10
 
 	INC DL

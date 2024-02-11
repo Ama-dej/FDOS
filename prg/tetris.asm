@@ -1,3 +1,4 @@
+CPU 8086
 [BITS 16]
 [ORG 0x0000]
 
@@ -164,7 +165,12 @@ NEW_PIECE:
 	MOV AL, BYTE[BX]
 	MOV BYTE[NEXT_TETROMINO_COLOUR], AL ; Get the new colour for the next tetromino.
 
-	SHL DX, 5 ; Multiply by 32 (because each tetromino is 32 bytes large).
+	; SHL DX, 5 ; Multiply by 32 (because each tetromino is 32 bytes large).
+	SHL DX, 1
+	SHL DX, 1
+	SHL DX, 1
+	SHL DX, 1
+	SHL DX, 1
 	ADD DX, I_TETROMINO
 
 	MOV AX, WORD[NEXT_TETROMINO]
@@ -275,7 +281,9 @@ P_PRESSED: ; Pause the game.
 	JNZ DELAY
 
 	MOV AX, WORD[FALL_DELAY]
-	SHL AX, 2
+	; SHL AX, 2
+	SHL AX, 1
+	SHL AX, 1
 	ADD AX, WORD[FALL_DELAY]
 	MOV WORD[PAUSED_DELAY], AX ; Reset the delay.
 
@@ -330,7 +338,9 @@ SPACE_PRESSED: ; Hard drop.
 
 	MOV BX, FIELD_DATA
 	ADD DH, BYTE[TETROMINO_Y]
-	MOVZX CX, DH
+	; MOVZX CX, DH
+	MOV CL, DH
+	XOR CH, CH
 	SHL CX, 1
 	ADD BX, CX ; Get the corresponding field data.
 
@@ -378,7 +388,9 @@ DOWN_PRESSED:
 
 	MOV BX, FIELD_DATA
 	ADD DH, BYTE[TETROMINO_Y]
-	MOVZX CX, DH
+	; MOVZX CX, DH
+	MOV CL, DH
+	XOR CH, CH
 	SHL CX, 1
 	ADD BX, CX ; Get the corresponding field data.
 
@@ -412,7 +424,9 @@ WRITE_TO_FIELD:
 
 	MOV BX, FIELD_DATA
 	ADD DH, BYTE[TETROMINO_Y]
-	MOVZX CX, DH
+	; MOVZX CX, DH
+	MOV CL, DH
+	XOR CH, CH
 	SHL CX, 1
 	ADD BX, CX ; Get the corresponding field data.
 
@@ -435,7 +449,9 @@ WRITE_TO_FIELD:
 
 	MOV BX, FIELD_DATA
 	ADD DH, BYTE[TETROMINO_Y]
-	MOVZX CX, DH
+	; MOVZX CX, DH
+	MOV CL, DH
+	XOR CH, CH
 	SHL CX, 1
 	ADD BX, CX
 
@@ -476,7 +492,9 @@ WRITE_TO_FIELD:
 
 	INC DH
 
-	MOVZX BX, AH
+	; MOVZX BX, AH
+	MOV BL, AH
+	XOR BH, BH
 	CALL WRITE_BLOCK
 
 	DEC DH
@@ -558,7 +576,9 @@ CHECK_MOVE: ; Basically check if any of the pieces are out of bounds.
 
 	MOV BX, FIELD_DATA
 	ADD DH, BYTE[TETROMINO_Y]
-	MOVZX CX, DH
+	; MOVZX CX, DH
+	MOV CL, DH
+	XOR CH, CH
 	SHL CX, 1
 	ADD BX, CX
 
@@ -715,7 +735,12 @@ GEN_FIRST_PIECE: ; When we start a new game there are some things we have to do 
 	MOV AL, BYTE[BX]
 	MOV BYTE[NEXT_TETROMINO_COLOUR], AL ; Same logic as the code under the NEW_PIECE label.
 
-	SHL DX, 5
+	; SHL DX, 5
+	SHL DX, 1
+	SHL DX, 1
+	SHL DX, 1
+	SHL DX, 1
+	SHL DX, 1
 	ADD DX, I_TETROMINO
 	MOV WORD[NEXT_TETROMINO], DX
 
@@ -726,7 +751,13 @@ HALT:
 	JMP SHORT HALT
 
 UPDATE_PIECE:
-	PUSHA
+	; PUSHA
+	PUSH AX
+	PUSH BX
+	PUSH CX
+	PUSH DX
+	PUSH SI
+	PUSH DI
 
 	MOV BX, WORD[TETROMINO_PREV_BUFFER]
 	MOV DI, 4
@@ -773,7 +804,13 @@ UPDATE_PIECE:
 	MOV AX, WORD[TETROMINO_COORDS]
 	MOV WORD[TETROMINO_PREV_COORDS], AX
 
-	POPA
+	; POPA
+	POP DI
+	POP SI
+	POP DX
+	POP CX
+	POP BX
+	POP AX
 	RET
 
 EXIT:
@@ -857,7 +894,13 @@ WRITE_CHAR:
 ; Converts an integer to a buffer in memory.
 ; AX -> Number.
 ITOA:
-	PUSHA
+	PUSH AX
+	PUSH BX
+	PUSH CX
+	PUSH DX
+	PUSH SI
+	PUSH DI
+	; PUSHA
 
 	MOV BX, SCORE - 2
 	MOV CX, 10
@@ -875,11 +918,23 @@ ITOA:
 	JNZ .LOOP
 
 .OUT:
-	POPA
+	; POPA
+	POP DI
+	POP SI
+	POP DX
+	POP CX
+	POP BX
+	POP AX
 	RET
 
 SAVE_HIGH_SCORE:
-	PUSHA
+	; PUSHA
+	PUSH AX
+	PUSH BX
+	PUSH CX
+	PUSH DX
+	PUSH SI
+	PUSH DI
 
 	MOV AH, 0x11
 	MOV BX, HIGH_SCORE
@@ -889,7 +944,13 @@ SAVE_HIGH_SCORE:
 	MOV SI, FILENAME
 	INT 0x20
 
-	POPA
+	; POPA
+	POP DI
+	POP SI
+	POP DX
+	POP CX
+	POP BX
+	POP AX
 	RET
 
 DRIVE_NUMBER: DB 0

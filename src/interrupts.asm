@@ -2,12 +2,11 @@
 ; -------------------------
 
 DOS_INT:
-        ; PUSHA
 	PUSH AX
 	PUSH BX
 	PUSH CX
 	PUSH DX
-	PUSH SP
+	; PUSH SP
 	PUSH BP
 	PUSH SI
 	PUSH DI
@@ -97,7 +96,7 @@ RW_RET_INT:
 	POP DI
 	POP SI
 	POP BP
-	POP SP
+	; POP SP
 	POP DX
 	POP CX
 	POP BX
@@ -118,7 +117,7 @@ RET_CODE_INT:
 	POP DI
 	POP SI
 	POP BP
-	POP SP
+	; POP SP
 	POP DX
 	POP CX
 	POP BX
@@ -140,7 +139,7 @@ RET_INT:
 	POP DI
 	POP SI
 	POP BP
-	POP SP
+	; POP SP
 	POP DX
 	POP CX
 	POP BX
