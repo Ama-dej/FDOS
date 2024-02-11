@@ -1,3 +1,4 @@
+CPU 8086
 [BITS 16]
 [ORG 0x7C00]
 %INCLUDE "src/locations.h"
@@ -84,14 +85,31 @@ READ_FAT_LOOP: ; In case the first fat table is broken try to load the redundant
 	ADD AX, WORD[RESERVED_SECTORS]
 
 	MOV BX, CX 
-	SHL BX, 9
+	; SHL BX, 9
+	SHL BX, 1
+	SHL BX, 1
+	SHL BX, 1
+	SHL BX, 1
+	SHL BX, 1
+	SHL BX, 1
+	SHL BX, 1
+	SHL BX, 1
+	SHL BX, 1
 	ADD BX, FILESYSTEM
 	MOV WORD[ROOT_DIR_LOC], BX
 
 	MOV CX, WORD[ROOT_ENTRIES]
-	SHL CX, 5
-	ADD CX, 511
-	SHR CX, 9
+
+	; SHL CX, 5
+	; ADD CX, 511
+	; SHR CX, 9
+
+	ADD CX, 15
+	SHR CX, 1
+	SHR CX, 1
+	SHR CX, 1
+	SHR CX, 1
+
 	PUSH CX
 
 	MOV DL, BYTE[DRIVE_NUMBER]
@@ -146,7 +164,11 @@ READ_DOS:
 	MOV AX, WORD[ES:BX]
 	JZ EVEN_CLUSTER
 	
-	SHR AX, 4 
+	; SHR AX, 4 
+	SHR AX, 1
+	SHR AX, 1
+	SHR AX, 1
+	SHR AX, 1
 	JMP ODD_CLUSTER
 
 EVEN_CLUSTER:
@@ -264,7 +286,13 @@ LBA_TO_CHS:
 	MOV DH, DL ; Get the head number.
 
 	MOV CH, AL
-	SHL AH, 6
+	; SHL AH, 6
+	SHL AH, 1
+	SHL AH, 1
+	SHL AH, 1
+	SHL AH, 1
+	SHL AH, 1
+	SHL AH, 1
 	OR CL, AH ; Get the number of tracks/cylinders.
 
 	POP AX
@@ -298,7 +326,11 @@ PUTH8:
 	MOV CX, 2
 
 .LOOP:
-	ROL BL, 4
+	; ROL BL, 4
+	ROL BL, 1
+	ROL BL, 1
+	ROL BL, 1
+	ROL BL, 1
 	MOV AL, BL
 	AND AL, 0x0F
 
@@ -318,8 +350,8 @@ PUTH8:
 EXPLORER_FIRST_SECTOR: DW 0
 ROOT_DIR_LOC: DW 0
 
-LOADING_MSG: DB "Loading system...", 0x0A, 0x0D, 0x00
-ERROR_MSG: DB "Disk error -> 0x", 0x00
+LOADING_MSG: DB "Loading...", 0x0A, 0x0D, 0x00
+ERROR_MSG: DB "Error -> 0x", 0x00
 
 TIMES 510 - ($ - $$) DB 0
 DW 0xAA55
