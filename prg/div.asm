@@ -22,6 +22,7 @@ START:
 	INT 0x20
 
 	MOV AH, 0x0E
+	MOV BX, 7
 	MOV AL, ' '
 	INT 0x10
 
@@ -32,6 +33,7 @@ START:
 	MOV AH, 0x0E
 	MOV AL, 0x0D
 	INT 0x10
+	MOV AH, 0x0E
 	MOV AL, 0x0A
 	INT 0x10
 

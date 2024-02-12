@@ -16,6 +16,14 @@ START:
 	MOV AX, 0x0003
 	INT 0x10
 
+	INT 0x11
+        AND AX, 0x0030
+        CMP AX, 0x0030
+        JNE .COLOR_SUPPORT
+
+	MOV BYTE[PRIMARY_FIELD_COLOR], 0x80
+
+.COLOR_SUPPORT:
 	XOR AL, AL
 	MOV BX, ASCII_NUM
 	MOV CX, 3
@@ -68,6 +76,10 @@ TO_INT:
 	MOV BX, FIELD
 	CALL MEMSET
 
+	MOV DX, 0x3D8
+	MOV AL, 1
+	OUT DX, AL
+
 	MOV AX, 0x0001
 	INT 0x10 ; Set to 40x25 with 16 colours.
 
@@ -77,7 +89,30 @@ TO_INT:
 
 	MOV AX, 0x1003
         MOV BL, 0x00
-        INT 0x10 ; Turn off blinking attribute.
+        INT 0x10 ; Turn off blinking attribute (EGA, VGA).
+
+	; MOV DX, 0x3D8
+	; IN AL, DX
+	; AND AL, 0x1F
+	; OUT DX, AL ; Turn off blinking attribute (CGA).
+
+	;mov ax,0x40
+            ;mov es,ax
+            ;mov dx,es:[0x063]  ;get port address of the card
+            ;add dx,4
+            ;mov al,es:[0x065]  ;get current value of Mode Select Register
+            ;and al,0x0df       ;mask value by 1101 1111 (to clear bit 5)
+            ;out dx,al         ;disable blink (set for bold background)
+            ;mov es:[0x065],al  ;save the new setting
+
+	MOV AX, 0x40
+	MOV ES, AX
+	MOV DX, WORD[ES:0x63]
+	ADD DX, 4
+	MOV AL, BYTE[ES:0x65]
+	AND AL, 0xDF
+	OUT DX, AL
+	MOV BYTE[ES:0x65], AL
 
 	MOV AH, 0x00
         INT 0x1A ; Get the number of clock ticks since midnight.
@@ -165,7 +200,8 @@ PRINT_FIELD:
 	XOR DL, DL
 
 .X_LOOP:
-	MOV BL, 0x70
+	XOR BH, BH
+	MOV BL, BYTE[PRIMARY_FIELD_COLOR]
 
 	PUSH DX
 	ADD DL, DH
@@ -206,11 +242,37 @@ PRINT_FIELD:
 	MOV WORD[PREVIOUS_ATTRIBUTE], AX
 
 UPDATE_SELECTED:
+	CMP BYTE[PRIMARY_FIELD_COLOR], 0x80
+	JNE .COLOR
+
+	MOV AH, 0x08
+	MOV AL, BYTE[PREVIOUS_ATTRIBUTE + 1]
+	AND AL, 0xF0
+	CMP AL, 0x80
+	JE .WHITE
+
+	MOV BL, 0x87
+	JMP .UPDATE
+
+.WHITE:
+	MOV BL, 0x78
+
+.UPDATE:
+	MOV AH, 0x09
+	MOV AL, BYTE[PREVIOUS_ATTRIBUTE]
+	XOR BH, BH
+	MOV CX, 1
+	INT 0x10
+
+	JMP GET_KEY
+
+.COLOR:
 	MOV AH, 0x09
 	MOV AL, BYTE[PREVIOUS_ATTRIBUTE]
 	MOV BL, BYTE[PREVIOUS_ATTRIBUTE + 1]
 	AND BL, 0x0F
 	OR BL, SELECTED_ATTRIBUTE
+
 	XOR BH, BH
 	MOV CX, 1
 	INT 0x10
@@ -327,6 +389,21 @@ PLACE_FLAG:
 	INC WORD[MINE_COUNT]
 
 .PLACE:
+	CMP BYTE[PRIMARY_FIELD_COLOR], 0x80
+	JNE .COLOR
+
+	MOV AH, 0x09
+	XOR BH, BH
+	MOV BL, 0x78
+	MOV CX, 1
+	INT 0x10
+
+	MOV AH, 0x87
+	MOV WORD[PREVIOUS_ATTRIBUTE], AX
+
+	JMP GET_KEY
+
+.COLOR:
 	MOV AH, 0x09
 	XOR BH, BH
 	MOV BL, (SELECTED_ATTRIBUTE & 0xF0) | 0x04
@@ -727,6 +804,7 @@ MEMSET:
 	POP BX
 	RET
 
+PRIMARY_FIELD_COLOR: DB 0x70
 ASCII_NUM: TIMES 4 DB 0
 MINE_COUNT_MSG: DB "Enter the amount of mines (1 - 1000): "
 MINE_COUNT_MSG_END:
