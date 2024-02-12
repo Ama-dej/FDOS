@@ -101,6 +101,11 @@ TO_INT:
 	OUT DX, AL
 	MOV BYTE[ES:0x65], AL ; Turn off blinking attribute (MDA, CGA).
 
+	MOV DX, 0x3D8
+	IN AL, DX
+	AND AL, 0x1F
+	OUT DX, AL
+
 	MOV AH, 0x00
         INT 0x1A ; Get the number of clock ticks since midnight.
 
