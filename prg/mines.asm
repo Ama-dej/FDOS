@@ -91,20 +91,7 @@ TO_INT:
         MOV BL, 0x00
         INT 0x10 ; Turn off blinking attribute (EGA, VGA).
 
-	; MOV DX, 0x3D8
-	; IN AL, DX
-	; AND AL, 0x1F
-	; OUT DX, AL ; Turn off blinking attribute (CGA).
-
-	;mov ax,0x40
-            ;mov es,ax
-            ;mov dx,es:[0x063]  ;get port address of the card
-            ;add dx,4
-            ;mov al,es:[0x065]  ;get current value of Mode Select Register
-            ;and al,0x0df       ;mask value by 1101 1111 (to clear bit 5)
-            ;out dx,al         ;disable blink (set for bold background)
-            ;mov es:[0x065],al  ;save the new setting
-
+	; http://www.techhelpmanual.com/140-int_10h_1003h__select_foreground_blink_or_bold_background.html
 	MOV AX, 0x40
 	MOV ES, AX
 	MOV DX, WORD[ES:0x63]
@@ -112,7 +99,7 @@ TO_INT:
 	MOV AL, BYTE[ES:0x65]
 	AND AL, 0xDF
 	OUT DX, AL
-	MOV BYTE[ES:0x65], AL
+	MOV BYTE[ES:0x65], AL ; Turn off blinking attribute (MDA, CGA).
 
 	MOV AH, 0x00
         INT 0x1A ; Get the number of clock ticks since midnight.
