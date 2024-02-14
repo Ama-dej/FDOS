@@ -16,7 +16,6 @@ STACK_POINTER: DW 0x1000
 
 PROG_START:
 JMP SETUP
-HIGH_SCORE: DW 0
 
 SETUP:
 	MOV AH, 0x00
@@ -30,6 +29,21 @@ SETUP:
 	MOV AX, 0x1003
 	MOV BL, 0x00
 	INT 0x10 ; Turn off blinking attribute. 
+
+	; http://www.techhelpmanual.com/140-int_10h_1003h__select_foreground_blink_or_bold_background.html
+        MOV AX, 0x40
+        MOV ES, AX
+        MOV DX, WORD[ES:0x63]
+        ADD DX, 4
+        MOV AL, BYTE[ES:0x65]
+        AND AL, 0xDF
+        OUT DX, AL
+        MOV BYTE[ES:0x65], AL ; Turn off blinking attribute (MDA, CGA).
+
+        MOV DX, 0x3D8
+        IN AL, DX
+        AND AL, 0x1F
+        OUT DX, AL
 
 	MOV BX, 0x0007
 
@@ -50,8 +64,10 @@ SETUP:
 	MOV DL, (TETROMINO_OFFSET & 0xFF) + 12
 	INT 0x10 ; "NEXT" string position.
 
+	MOV AH, 0x01
 	MOV SI, NEXT_MSG
-	CALL PUTS
+	MOV CX, 4
+	INT 0x20
 
 	MOV BX, 0x0007
 
@@ -130,14 +146,19 @@ BORDER_LOOP:
 	MOV DX, SCORE_OFFSET - 0x0100 
 	INT 0x10 
 
+	MOV AH, 0x01
 	MOV SI, LINES
-	CALL PUTS
+	MOV CX, 6
+	INT 0x20
 
+	MOV AH, 0x02
 	MOV DX, ((SCORE_OFFSET & 0xFF00) + 0x0300) | ((SCORE_OFFSET & 0x00FF) - 2)
 	INT 0x10
 
+	MOV AH, 0x01
 	MOV SI, HIGH
-	CALL PUTS
+	MOV CX, 11
+	INT 0x20
 
 	JMP GEN_FIRST_PIECE
 
@@ -292,8 +313,10 @@ P_PRESSED: ; Pause the game.
 	MOV DX, PAUSED_MESSAGE_LOC 
 	INT 0x10 ; Change cursor location to the left side of the screen.
 
+	MOV AH, 0x01
 	MOV SI, PAUSED_MSG
-	CALL PUTS
+	MOV CX, 6
+	INT 0x20
 
 .WAIT_FOR_P_PRESS:
 	MOV AH, 0x00 
@@ -309,8 +332,10 @@ P_PRESSED: ; Pause the game.
 	MOV DX, PAUSED_MESSAGE_LOC 
 	INT 0x10 ; Change cursor back to clear the string.
 
+	MOV AH, 0x01
 	MOV SI, CLEAR_PAUSED_MSG
-	CALL PUTS
+	MOV CX, 6
+	INT 0x20
 
 	MOV SI, 1 ; After unpausing force the piece to fall down (so the player can't cheat by spamming the pause button).
 	
@@ -526,10 +551,14 @@ WRITE_TO_FIELD:
 	MOV AX, WORD[SCORE]
 	CALL ITOA ; Update the score.
 
+	PUSH AX
 	PUSH SI
+	MOV AH, 0x01
 	MOV SI, ASCII_NUM
-	CALL PUTS
+	MOV CX, 5
+	INT 0x20
 	POP SI
+	POP AX
 
 	AND AX, 0x000F
 	JNZ .NO_DECREASE ; Every 16 lines cleared increase the falling speed.
@@ -635,15 +664,19 @@ GAME_OVER:
 	MOV DX, 0x0A11
 	INT 0x10 ; Change cursor location to around the middle of the screen.
 
+	MOV AH, 0x01
 	MOV SI, GAME
-	CALL PUTS ; Print "Game".
+	MOV CX, 4
+	INT 0x20 ; Print "Game".
 
 	MOV AH, 0x02
 	MOV DX, 0x0D11
 	INT 0x10 ; Move down a bit.
 
+	MOV AH, 0x01
 	MOV SI, OVER
-	CALL PUTS ; Print "over".
+	MOV CX, 4
+	INT 0x20 ; Print "over".
 
 	MOV AX, WORD[SCORE]
 	CMP AX, WORD[HIGH_SCORE] ; Check if the score is higher than the high score.
@@ -707,17 +740,22 @@ GEN_FIRST_PIECE: ; When we start a new game there are some things we have to do 
 	MOV DX, SCORE_OFFSET
 	INT 0x10
 
+	MOV AH, 0x01
 	MOV SI, ASCII_NUM
-	CALL PUTS ; Print the scores for the first time.
-
+	MOV CX, 5
+	INT 0x20 ; Print the scores for the first time.
+	
+	MOV AH, 0x02
 	MOV DX, SCORE_OFFSET + 0x0400
 	INT 0x10
 
 	MOV AX, WORD[HIGH_SCORE]
 	CALL ITOA ; Don't forget about the high score.
 
+	MOV AH, 0x01
 	MOV SI, ASCII_NUM
-	CALL PUTS
+	MOV CX, 5
+	INT 0x20
 
 	MOV SI, WORD[FALL_DELAY] 
 
@@ -828,27 +866,6 @@ EXIT:
 	XOR AH, AH
 	INT 0x20
 
-; Prints a message on the screen.
-;
-; SI -> Location of the string.
-PUTS:
-	PUSH AX
-	PUSH SI
-
-	MOV AH, 0x0E
-
-.LOOP:
-	LODSB
-	OR AL, AL
-	JZ .OUT
-	INT 0x10
-	JMP SHORT .LOOP
-
-.OUT:
-	POP SI
-	POP AX
-	RET
-
 ; Writes a coloured block at a given location.
 ;
 ; BH -> Page.
@@ -881,14 +898,15 @@ WRITE_BLOCK:
 ; CX -> Count.
 WRITE_CHAR:
 	PUSH AX
-
 	MOV AH, 0x02
 	INT 0x10
+	POP AX
 
+	PUSH AX
 	MOV AH, 0x09
 	INT 0x10
-
 	POP AX
+
 	RET
 
 ; Converts an integer to a buffer in memory.
@@ -900,9 +918,8 @@ ITOA:
 	PUSH DX
 	PUSH SI
 	PUSH DI
-	; PUSHA
 
-	MOV BX, SCORE - 2
+	MOV BX, SCORE - 1
 	MOV CX, 10
 	MOV DI, 5
 
@@ -918,7 +935,6 @@ ITOA:
 	JNZ .LOOP
 
 .OUT:
-	; POPA
 	POP DI
 	POP SI
 	POP DX
@@ -937,6 +953,8 @@ SAVE_HIGH_SCORE:
 	PUSH DI
 
 	MOV AH, 0x11
+	MOV BX, WORD[TARGET_SEGMENT]
+	MOV ES, BX
 	MOV BX, HIGH_SCORE
 	MOV CX, 2
 	MOV DX, HIGH_SCORE
@@ -956,17 +974,18 @@ SAVE_HIGH_SCORE:
 DRIVE_NUMBER: DB 0
 FILENAME: DB "TETRIS.PRG", 0x00
 
-NEXT_MSG: DB "NEXT", 0x00
-GAME: DB "Game", 0x00
-OVER: DB "over", 0x00
-LINES: DB "Lines:", 0x00
-HIGH: DB "High score:", 0x00
-PAUSED_MSG: DB "Paused", 0x00
-CLEAR_PAUSED_MSG: DB "      ", 0x00
+HIGH_SCORE: TIMES 2 DB 0
+NEXT_MSG: DB "NEXT"
+GAME: DB "Game"
+OVER: DB "over"
+LINES: DB "Lines:"
+HIGH: DB "High score:"
+PAUSED_MSG: DB "Paused"
+CLEAR_PAUSED_MSG: DB "      "
 
 PAUSED_DELAY: DW 0
 
-ASCII_NUM: DB "00000", 0x00
+ASCII_NUM: DB "00000"
 
 SCORE: DW 0
 FALL_DELAY: DW 350 
