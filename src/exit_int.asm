@@ -11,6 +11,10 @@ EXIT_INT:
 	POP BX
 	POP AX
 
+        XOR AX, AX
+        MOV SS, AX
+        MOV SP, (DOS_SEGMENT << 4) + DOS_OFFSET
+
         MOV AX, DOS_SEGMENT
         MOV DS, AX
         MOV ES, AX
@@ -40,10 +44,6 @@ EXIT_INT:
         CALL LOAD_DIRECTORY
 
 .NO_NEED_TO_LOAD:
-        XOR AX, AX
-        MOV SS, AX
-        MOV SP, (DOS_SEGMENT << 4) + DOS_OFFSET
-
         MOV SI, DS
         MOV ES, SI
 
