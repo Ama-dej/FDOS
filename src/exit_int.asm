@@ -42,7 +42,7 @@ EXIT_INT:
 .NO_NEED_TO_LOAD:
         XOR AX, AX
         MOV SS, AX
-        MOV SP, 0x7E00
+        MOV SP, (DOS_SEGMENT << 4) + DOS_OFFSET
 
         MOV SI, DS
         MOV ES, SI

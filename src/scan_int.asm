@@ -23,9 +23,10 @@ SCAN_INT:
         JZ .SCAN_LOOP
 
         MOV AH, 0x0E
+	MOV BX, 7
         INT 0x10
 
-        MOV BYTE[SI], AL
+	MOV BYTE[SI], AL
         INC SI
         LOOP .SCAN_LOOP
 
@@ -38,7 +39,7 @@ SCAN_INT:
 	PUSH CX
 	PUSH DX
         MOV AH, 0x03
-        MOV BH, 0
+	XOR BH, BH
         INT 0x10
 
         CMP DL, 0
@@ -49,6 +50,7 @@ SCAN_INT:
 
 .MOVE_NORMAL:
         MOV AH, 0x02
+	XOR BH, BH
         DEC DL
         INT 0x10
 

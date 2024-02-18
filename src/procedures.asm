@@ -1360,14 +1360,17 @@ GET_FILE_SIZE:
 ; Prints a new line and a carrige return.
 NLCR:
         PUSH AX
+	PUSH BX
 
         MOV AH, 0x0E
         MOV AL, 0x0A
+	MOV BX, 7
         INT 0x10
 	MOV AH, 0x0E
         MOV AL, 0x0D
         INT 0x10
 
+	POP BX
         POP AX
         RET
 
