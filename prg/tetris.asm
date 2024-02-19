@@ -5,6 +5,7 @@ CPU 8086
 %DEFINE TETROMINO_OFFSET 0x010E ; y : x offset of the field and other stuff.
 %DEFINE SCORE_OFFSET 0x0B1D
 %DEFINE PAUSED_MESSAGE_LOC 0x0B03
+%DEFINE TICK_DELAY 14
 
 JMP SHORT PROG_START
 VERSION: DB 0
@@ -560,13 +561,13 @@ WRITE_TO_FIELD:
 	POP SI
 	POP AX
 
-	AND AX, 0x000F
-	JNZ .NO_DECREASE ; Every 16 lines cleared increase the falling speed.
+	; AND AX, 0x000F
+	; JNZ .NO_DECREASE ; Every 16 lines cleared increase the falling speed.
 
-	CMP WORD[FALL_DELAY], 150 ; If the falling speed is already to high then don't.
-	JLE .NO_DECREASE
+	; CMP WORD[FALL_DELAY], 1 ; If the falling speed is already to high then don't.
+	; JLE .NO_DECREASE
 
-	SUB WORD[FALL_DELAY], 4
+	; SUB WORD[FALL_DELAY], 1
 
 .NO_DECREASE:
 	OR WORD[FIELD_DATA + 2], 0
@@ -736,7 +737,7 @@ NOT_BEATEN:
 	DEC DI
 	JNZ .CLEAR_FIELD_GRAPHICS
 
-	MOV WORD[FALL_DELAY], 4
+	MOV WORD[FALL_DELAY], TICK_DELAY
 
 GEN_FIRST_PIECE: ; When we start a new game there are some things we have to do first.
 	MOV AH, 0x02
@@ -992,7 +993,7 @@ PAUSED_DELAY: DW 0
 ASCII_NUM: DB "00000"
 
 SCORE: DW 0
-FALL_DELAY: DW 4
+FALL_DELAY: DW TICK_DELAY
 
 NEXT_TETROMINO: DW 0
 NEXT_TETROMINO_COLOUR: DB 0
