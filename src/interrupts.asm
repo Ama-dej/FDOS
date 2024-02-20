@@ -47,7 +47,6 @@ DOS_INT:
 %INCLUDE "src/copy_file_int.asm"
 %INCLUDE "src/command_parameters_int.asm"
 %INCLUDE "src/print_error_messages_int.asm"
-%INCLUDE "src/wait_ms_int.asm"
 %INCLUDE "src/dos_text_mode_int.asm"
 %INCLUDE "src/graphics_mode_int.asm"
 %INCLUDE "src/put_pixel_int.asm"
@@ -224,8 +223,7 @@ TIMES 9 DW RET_INT
 ; ------
 COMMAND_PARAMETERS_INT_ADDRESS: DW COMMAND_PARAMETERS_INT
 PRINT_ERROR_MESSAGES_INT_ADDRESS: DW PRINT_ERROR_MESSAGES_INT
-WAIT_MS_INT_ADDRESS: DW WAIT_MS_INT
-TIMES 13 DW RET_INT
+TIMES 14 DW RET_INT
 ; Graphics routines.
 ; ------------------
 SET_DOS_TEST_MODE_INT_ADDRESS: DW DOS_TEXT_MODE_INT

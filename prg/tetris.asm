@@ -5,7 +5,7 @@ CPU 8086
 %DEFINE TETROMINO_OFFSET 0x010E ; y : x offset of the field and other stuff.
 %DEFINE SCORE_OFFSET 0x0B1D
 %DEFINE PAUSED_MESSAGE_LOC 0x0B03
-%DEFINE TICK_DELAY 14
+%DEFINE TICK_DELAY 4
 
 JMP SHORT PROG_START
 VERSION: DB 0
@@ -19,6 +19,21 @@ PROG_START:
 JMP SETUP
 
 SETUP:
+	INT 0x11
+        AND AX, 0x0030
+        CMP AX, 0x0030
+        JNE .CGA
+
+	MOV BX, TETROMINO_COLOURS
+	MOV CX, 7
+
+.LOOP:
+	MOV BYTE[BX], 0x78
+
+	INC BX
+	LOOP .LOOP
+
+.CGA:
 	MOV AH, 0x00
 	MOV AL, 0x01
 	INT 0x10 ; Change to 40x25.
@@ -45,6 +60,20 @@ SETUP:
         IN AL, DX
         AND AL, 0x1F
         OUT DX, AL
+
+	XOR BX, BX
+	MOV ES, BX
+	MOV BX, 0x1C * 4
+
+	MOV DX, WORD[ES:BX]
+	MOV WORD[ORIGINAL_ISR_OFFSET], DX
+	MOV DX, WORD[ES:BX + 2]
+	MOV WORD[ORIGINAL_ISR_SEGMENT], DX
+
+	CLI
+	MOV WORD[ES:BX], TIMER_ISR
+	MOV WORD[ES:BX + 2], DS
+	STI
 
 	MOV BX, 0x0007
 
@@ -302,11 +331,7 @@ P_PRESSED: ; Pause the game.
 	CMP WORD[PAUSED_DELAY], 0 ; So you can't spam the pause key.
 	JNZ DELAY
 
-	MOV AX, WORD[FALL_DELAY]
-	; SHL AX, 2
-	SHL AX, 1
-	SHL AX, 1
-	ADD AX, WORD[FALL_DELAY]
+	MOV AX, TICK_DELAY
 	MOV WORD[PAUSED_DELAY], AX ; Reset the delay.
 
 	MOV AH, 0x02
@@ -338,8 +363,6 @@ P_PRESSED: ; Pause the game.
 	MOV CX, 6
 	INT 0x20
 
-	MOV SI, 1 ; After unpausing force the piece to fall down (so the player can't cheat by spamming the pause button).
-	
 	JMP DELAY
 
 UP_PRESSED:
@@ -553,12 +576,12 @@ WRITE_TO_FIELD:
 	CALL ITOA ; Update the score.
 
 	PUSH AX
-	PUSH SI
+	; PUSH SI
 	MOV AH, 0x01
 	MOV SI, ASCII_NUM
 	MOV CX, 5
 	INT 0x20
-	POP SI
+	; POP SI
 	POP AX
 
 	; AND AX, 0x000F
@@ -647,19 +670,25 @@ DELAY:
 	; MOV DX, 0x03E8
 	; INT 0x15 ; Wait for 1ms.
 
-	MOV AH, 0x22
-	MOV CX, 1
-	INT 0x20
+	; MOV AH, 0x22
+	; MOV CX, 1
+	; INT 0x20
 
 	OR WORD[PAUSED_DELAY], 0
 	JZ .SKIP
 	DEC WORD[PAUSED_DELAY]
 
 .SKIP:
-	DEC SI
-	JNZ START ; Wait N times for 1ms so it looks like a N ms delay.
+	; INT 0x1C
 
-	MOV SI, WORD[FALL_DELAY] ; Reset the counter.
+	CMP WORD[FALL_DELAY], 0
+	JNZ START
+	MOV WORD[FALL_DELAY], TICK_DELAY
+
+	; DEC SI
+	; JNZ START ; Wait N times for 1ms so it looks like a N ms delay.
+
+	; MOV SI, WORD[FALL_DELAY] ; Reset the counter.
 	; MOV AL, ' ' ; It's stupid but it works.
 	JMP DOWN_PRESSED 
 
@@ -762,7 +791,7 @@ GEN_FIRST_PIECE: ; When we start a new game there are some things we have to do 
 	MOV CX, 5
 	INT 0x20
 
-	MOV SI, WORD[FALL_DELAY] 
+	; MOV SI, WORD[FALL_DELAY] 
 
 	MOV AH, 0x02
 	INT 0x1A ; Generate the first piece.
@@ -857,6 +886,17 @@ UPDATE_PIECE:
 	RET
 
 EXIT:
+	XOR BX, BX
+	MOV ES, BX
+	MOV BX, 0x1C * 4
+
+	CLI
+	MOV DX, WORD[ORIGINAL_ISR_OFFSET]
+	MOV WORD[ES:BX], DX
+	MOV DX, WORD[ORIGINAL_ISR_SEGMENT]
+	MOV WORD[ES:BX + 2], DX
+	STI
+
 	MOV AX, WORD[SCORE]
 	CMP AX, WORD[HIGH_SCORE]
 	JLE .CONTINUE
@@ -975,6 +1015,28 @@ SAVE_HIGH_SCORE:
 	POP BX
 	POP AX
 	RET
+
+TIMER_ISR:
+	PUSH AX
+	PUSH DS
+
+	MOV AX, 0x0C80
+	MOV DS, AX
+
+	MOV AX, WORD[FALL_DELAY]
+	TEST AX, AX
+	JZ .EXIT
+	
+	DEC AX
+	MOV WORD[FALL_DELAY], AX
+
+.EXIT:
+	POP DS
+	POP AX
+	IRET
+
+ORIGINAL_ISR_OFFSET: DW 0
+ORIGINAL_ISR_SEGMENT: DW 0
 
 DRIVE_NUMBER: DB 0
 FILENAME: DB "TETRIS.PRG", 0x00
