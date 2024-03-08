@@ -33,11 +33,16 @@ dd if=/dev/zero of=img/floppy1440.img count=2880 bs=512
 dd if=/dev/zero of=img/floppy720.img count=1440 bs=512
 dd if=/dev/zero of=img/floppy1200.img count=2400 bs=512
 dd if=/dev/zero of=img/floppy360.img count=720 bs=512
+dd if=/dev/zero of=img/floppy160.img count=320 bs=512
+
+mkfs.fat -F 12 img/floppy1440.img
+mkfs.fat -F 12 img/floppy720.img
+mkfs.fat -F 12 img/floppy1200.img
+mkfs.fat -F 12 img/floppy360.img
+mkfs.fat -F 12 img/floppy160.img -g 1/8 -r 112
 
 for img in img/*
 do
-	mkfs.fat -F 12 "$img"
-
 	num=$(echo "$img" | tr -dc '0-9')
 
 	cp bin/boot.bin "bin/boot$num.bin"
@@ -47,4 +52,5 @@ do
 	mcopy -i "$img" bin/dos.bin "::DOS.SYS"
 	mcopy -i "$img" bin/demo "::DEMO"
 	mcopy -i "$img" bin/games "::GAMES"
+	mcopy -i "$img" bin/rombasic.bin "::ROMBASIC.PRG"
 done

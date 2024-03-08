@@ -1,5 +1,6 @@
 ; AH = 0x14
 ; SI = Path to file.
+; DH = File attributes.
 MAKE_FILE_INT:
         CALL MAKE_ENTRY_PROC
         JC RET_CODE_INT
@@ -12,11 +13,6 @@ MAKE_FILE_INT:
         JMP RET_CODE_INT
 
 .NO_ERROR:
-        MOV WORD[ES:DI + 26], 0
-        MOV WORD[ES:DI + 28], 0
-        MOV WORD[ES:DI + 30], 0
-        MOV BYTE[ES:DI + 11], 0
-
         CALL GET_DIRECTORY_SIZE
         CALL STORE_DIRECTORY
         JC ENTRY_WRITE_ERROR

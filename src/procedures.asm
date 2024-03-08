@@ -278,7 +278,7 @@ CREATE_ENTRY:
         CMP BYTE[ES:BX], 0xE5
         JE .FOUND_FREE
 
-        CMP CX, 128
+        CMP CX, 112
         JAE .DIRECTORY_FULL_ERROR ; <- Zamenji to z smiselno napako.
 
         ADD BX, 32
@@ -296,6 +296,17 @@ CREATE_ENTRY:
         ; MOV SI, FILENAME_BUFFER
         MOV CX, 11
         CALL MEMCPY
+
+	XOR CX, CX
+
+; TODO:
+; - Cajt nastanka.
+
+	MOV BYTE[ES:DI + 11], DH
+	MOV WORD[ES:DI + 20], CX
+	MOV WORD[ES:DI + 26], CX
+	MOV WORD[ES:DI + 28], CX
+	MOV WORD[ES:DI + 30], CX
 
 	JMP .OUT
 
@@ -943,7 +954,6 @@ LOAD_DIRECTORY:
 
 .ROOT_DIRECTORY:
 	PUSH DX
-        ; MOVZX AX, BYTE[NUMBER_OF_FAT]
 	MOV AL, BYTE[NUMBER_OF_FAT]
 	XOR AH, AH
         MUL WORD[SECTORS_PER_FAT]
@@ -952,7 +962,6 @@ LOAD_DIRECTORY:
 
         MOV CX, WORD[ROOT_ENTRIES]
         ADD CX, 15
-        ; SHR CX, 4
 	SHR CX, 1
 	SHR CX, 1
 	SHR CX, 1
@@ -1057,53 +1066,6 @@ STORE_DIRECTORY:
 	POP BX
 	POP AX
 	RET
-
-; Turns on the PC speaker.
-SPK_ON:
-        PUSH AX
-        IN AL, 0x61
-        OR AL, 3
-        OUT 0x61, AL
-        POP AX
-        RET
-
-; Turns off the PC speaker.
-SPK_OFF:
-        PUSH AX
-        IN AL, 0x61
-        AND AL, 0xFC
-        OUT 0x61, AL
-        POP AX
-        RET
-
-; BL <- Value to print.
-PUTH8:
-        PUSH AX
-        PUSH CX
-        MOV AH, 0x0E
-        MOV CX, 2
-
-.LOOP:
-        ; ROL BL, 4
-	ROL BL, 1
-	ROL BL, 1
-	ROL BL, 1
-	ROL BL, 1
-        MOV AL, BL
-        AND AL, 0x0F
-
-        CMP AL, 10
-        SBB AL, 0x69
-        DAS
-
-        INT 0x10
-
-        DEC CX
-        JNZ .LOOP
-
-        POP CX
-        POP AX
-        RET
 
 ; AL <- Character.
 ;

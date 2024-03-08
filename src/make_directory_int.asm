@@ -10,6 +10,7 @@ MAKE_DIRECTORY_INT:
         POP AX
         JC INT_OUT_OF_SPACE_ERROR
 
+	MOV DH, 0x10
         MOV SI, FILENAME_BUFFER
         CALL CREATE_ENTRY
         JNC .NO_ERROR
@@ -21,7 +22,7 @@ MAKE_DIRECTORY_INT:
         MOV WORD[ES:DI + 26], CX
         MOV WORD[ES:DI + 28], 0
         MOV WORD[ES:DI + 30], 0
-        MOV BYTE[ES:DI + 11], 0x10
+        ; MOV BYTE[ES:DI + 11], 0x10
 
         PUSH CX
         CALL GET_DIRECTORY_SIZE
