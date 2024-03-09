@@ -39,7 +39,7 @@ mkfs.fat -F 12 img/floppy1440.img
 mkfs.fat -F 12 img/floppy720.img
 mkfs.fat -F 12 img/floppy1200.img
 mkfs.fat -F 12 img/floppy360.img
-mkfs.fat -F 12 img/floppy160.img -g 1/8 -r 112
+mkfs.fat -F 12 img/floppy160.img -g 1/8 -r 112 -s 2
 
 for img in img/*
 do
