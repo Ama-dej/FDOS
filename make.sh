@@ -8,6 +8,7 @@ nasm -f bin src/dos.asm -o bin/dos.bin
 
 mkdir bin/games
 mkdir bin/demo
+mkdir bin/devel
 
 cd prg
 for file in *
@@ -26,6 +27,8 @@ mv pong.bin games/pong.prg
 mv mandel.bin demo/mandel.prg
 mv fib.bin demo/fib.prg
 mv div.bin demo/div.prg
+
+mv rombasic.bin devel/rombasic.prg
 
 cd ..
 
@@ -52,5 +55,5 @@ do
 	mcopy -i "$img" bin/dos.bin "::DOS.SYS"
 	mcopy -i "$img" bin/demo "::DEMO"
 	mcopy -i "$img" bin/games "::GAMES"
-	mcopy -i "$img" bin/rombasic.bin "::ROMBASIC.PRG"
+	mcopy -i "$img" bin/devel "::DEVEL"
 done
