@@ -199,13 +199,7 @@ MAKE_ENTRY_PROC:
         CALL CONVERT_LE_AND_TRAVERSE
         JNC .OK
 
-        ; SHR AX, 12
-	ROL AX, 1
-	ROL AX, 1
-	ROL AX, 1
-	ROL AX, 1
-	AND AX, 0x000F
-        MOV BYTE[INT_RET_CODE], AL
+        MOV BYTE[INT_RET_CODE], DH
         STC
         JMP .NOT_WORKING_DIRECTORY
 
@@ -311,11 +305,11 @@ CREATE_ENTRY:
 	JMP .OUT
 
 .FILE_EXISTS_ERROR:
-	MOV AL, 0x06
+	MOV AL, 0x44
 	JMP .ERROR
 
 .DIRECTORY_FULL_ERROR:
-	MOV AL, 0x03
+	MOV AL, 0x48
 
 .ERROR:
 	STC
@@ -325,16 +319,12 @@ CREATE_ENTRY:
 	POP CX
 	RET
 
-
-; TODO:
-; - Stestirej to proceduro.
-
 ; SI <- Path.
 ; DL <- Drive number. (NE VEČ)
 ; ES:BX <- Where to load the directory.
 ; DI <- Location of an 11 byte buffer.
 ;
-; AX -> Return value of the TRAVERSE_PATH procedure.
+; DH -> Error code.
 ; DI -> The converted entry
 CONVERT_LE_AND_TRAVERSE:
 	PUSH SI
@@ -374,7 +364,7 @@ CONVERT_LE_AND_TRAVERSE:
 	CMP BYTE[SI], 0
 	JZ .CONVERT_ERROR
 
-	MOV DH, BYTE[SI]
+	MOV AH, BYTE[SI]
 	MOV BYTE[SI], 0
 
 	PUSH CX 
@@ -385,11 +375,12 @@ CONVERT_LE_AND_TRAVERSE:
 	JC .OUT
 
 	MOV SI, CX
-	MOV BYTE[SI], DH
+	MOV BYTE[SI], AH
+	XOR DH, DH
 	JMP .OUT
 
 .CONVERT_ERROR:
-	OR AX, 0x5000
+	MOV DH, 0x42
 	STC
 	JMP .OUT
 
@@ -401,7 +392,9 @@ CONVERT_LE_AND_TRAVERSE:
 	MOV AX, WORD[WORKING_DIRECTORY_FIRST_SECTOR]
 
 .OUT:
+	MOV CH, DH
 	POP DX
+	MOV DH, CH
 	POP CX
 	POP SI
 	RET
@@ -498,44 +491,20 @@ IS_PATH_VALID:
 	POP AX
 	RET
 
-; Helper procedure to parse the errors returned by the TRAVERSE_PATH procedure.
-PATH_ERRORS:
-	MOV SP, BP
-
-	; SHR AX, 12
-	ROL AX, 1
-	ROL AX, 1
-	ROL AX, 1
-	ROL AX, 1
-	AND AX, 0x000F
-
-        CMP AX, 1
-        JE DIR_NOT_FOUND
-
-        CMP AX, 2
-        JE FILE_NOT_DIRECTORY
-
-        JMP READ_ERROR
-
 ; ES:BX <- Where to load the directory.
 ; SI <- Path string.
-; DL <- Drive number. (NE VEČ)
+; DL <- Drive number. (LIE)
 ;
 ; AX -> First sector of the final directory.
 ; SI -> Pointer to the entry where the error occured (Points to 0 if all goes well).
 ; CF -> Cleared on success, set otherwise.
-; AX[12:16] -> Error codes (0 if success).
-; Errors:
-; 1 - An entry in the path does not exist.
-; 2 - The entry exists but is not a directory.
-; 3 - An error occured while trying to read the directory.
+; DH -> Error code.
 TRAVERSE_PATH:
 	PUSH BX
 	PUSH CX
 	PUSH DI
 	PUSH ES
-
-	PUSH DX ; <- !!!!!!!
+	PUSH DX
 
 	PUSH DS
 	MOV DI, DOS_SEGMENT
@@ -606,7 +575,7 @@ TRAVERSE_PATH:
 	POP SI
         JC .DIRECTORY_NOT_FOUND
 
-        TEST BYTE[ES:BX + 11], 0x10
+	TEST BYTE[ES:BX + 11], 0x10
         JZ .FILE_NOT_DIRECTORY
 
         MOV AX, WORD[ES:BX + 26]
@@ -632,24 +601,15 @@ TRAVERSE_PATH:
 	MOV ES, BX
 	MOV BX, DATA_BUFFER
 
-	; CMP CX, 1
-	; JNE .LOAD
-
-	; MOV BX, WORD[DIRECTORY_TARGET_SEGMENT]
-	; MOV ES, BX
-	; MOV BX, WORD[DIRECTORY_TARGET_OFFSET]
-
-; .LOAD:
 	MOV DL, BYTE[DRIVE_NUMBER] ; <- When multi drive support arrives. (figured out this is ok)
         CALL LOAD_DIRECTORY
-        JC .READ_ERROR
+        JC .DISK_ERROR
 
 	POP DS
 	CALL NEXT_PATH_ENTRY
 
 	DEC CX
 	JNZ .LOAD_LOOP
-	; LOOP .LOAD_LOOP
 
 	PUSH SI
 	PUSH DS
@@ -659,12 +619,12 @@ TRAVERSE_PATH:
 
 	CALL GET_DIRECTORY_SIZE
 	INC CX
-	; SHL CX, 5
 	SHL CX, 1
 	SHL CX, 1
 	SHL CX, 1
 	SHL CX, 1
 	SHL CX, 1
+
 	MOV SI, DATA_BUFFER
 	MOV DI, WORD[DIRECTORY_TARGET_SEGMENT]
 	MOV ES, DI
@@ -694,30 +654,29 @@ TRAVERSE_PATH:
 
 .DIRECTORY_NOT_FOUND:
 	POP DS
-	OR AX, 0x4000
+	MOV DH, 0x43 ; <- Zamenjaj z pravilno statusno kodo!
 	STC
 	JMP .OUT
 
 .FILE_NOT_DIRECTORY:
 	POP DS
-	OR AX, 0x7000
+	MOV DH, 0x46 ; <- Zamenjaj z pravilno statusno kodo!
 	STC
 	JMP .OUT
 
-.READ_ERROR:
+.DISK_ERROR:
 	POP DS
-	OR AX, 0x1000
-	STC
 	JMP .OUT
 
 .MAX_DEPTH:
 	POP DX
-	OR AX, 0xA000
+	MOV DH, 0x4A ; <- Zamenjaj z pravilno statusno kodo!
 	STC
 
 .OUT:
-	POP DX ; <- !!!!!!!!!!!!!1
-
+	MOV CH, DH
+	POP DX
+	MOV DH, CH
 	POP ES
 	POP DI
 	POP CX
@@ -929,7 +888,9 @@ FINDCHAR:
 
 ; AX <- First sector of the directory.
 ; ES:BX <- Where to load the directory.
-; DL <- Drive number. (NE VEČ)
+; DL <- Drive number. (CURRENTLY A LIE)
+;
+; DH -> BIOS error code.
 LOAD_DIRECTORY:
 	PUSH AX
 	PUSH BX
@@ -950,6 +911,8 @@ LOAD_DIRECTORY:
 	CALL GET_NEXT_CLUSTER
 	CMP AX, 0xFF8
 	JL .LOOP
+
+	XOR DH, DH
 	JMP .OUT
 
 .ROOT_DIRECTORY:
@@ -972,7 +935,9 @@ LOAD_DIRECTORY:
 .OUT:
 	POP DI
 	POP SI
+	MOV AH, DH
 	POP DX
+	MOV DH, AH
 	POP CX
 	POP BX
 	POP AX
@@ -1105,8 +1070,10 @@ UPDATE_FS_WRITE_INT:
 	POP AX
 	RET
 
-; DL <- Drive number. (slaba implementacija, če že hočemštevilko za disketno enoto bi rabu zahtevat tud podatke v zagonskem odseku?)
-; ES:BX <- Lokacija, kamor nalo�imo FAT tabelo.
+; DL <- Drive number.
+; ES:BX <- FAT memory address.
+;
+; DH -> Error code.
 LOAD_FAT:
 	PUSH AX
 	PUSH BX
@@ -1140,13 +1107,17 @@ LOAD_FAT:
         POP ES
 	POP DI
 	POP SI
+	MOV AH, DH
 	POP DX
+	MOV DH, AH
 	POP CX
 	POP BX
 	POP AX
         RET
 
-; DL <- Drive number. (isti komentar kot pri STORE_FAT)
+; DL <- Drive number.
+;
+; DH -> Error code.
 STORE_FAT:
 	PUSH AX
 	PUSH BX
@@ -1164,20 +1135,22 @@ STORE_FAT:
 
         MOV AX, WORD[RESERVED_SECTORS]
         ; MOV DL, BYTE[DRIVE_NUMBER]
-        MOV DH, BYTE[NUMBER_OF_FAT]
+        MOV CH, BYTE[NUMBER_OF_FAT]
 
 .STORE_LOOP:
         CALL WRITE_DISK
 
         ADD AX, CX
 
-        DEC DH
+        DEC CH
         JNZ .STORE_LOOP
 
         POP ES
 	POP DI
 	POP SI
+	MOV AH, DH
 	POP DX
+	MOV DH, AH
 	POP CX
 	POP BX
 	POP AX
@@ -1537,13 +1510,17 @@ WRITE_DATA:
         MOV DL, BYTE[DRIVE_NUMBER]
         CALL WRITE_DISK
 
+	MOV AH, DH
         POP DX
+	MOV DH, AH
         POP CX
         POP AX
         RET
 
 ; AX <- Current cluster.
 ; ES:BX <- Destination buffer.
+;
+; DH -> BIOS error code.
 READ_DATA:
         PUSH AX
         PUSH CX
@@ -1561,7 +1538,13 @@ READ_DATA:
         MOV DL, BYTE[DRIVE_NUMBER]
         CALL READ_DISK
 
+	; SIMULACIJA NAPAKE
+	; MOV DH, 0x10
+	; STC
+
+	MOV AH, DH
         POP DX
+	MOV DH, AH
         POP CX
         POP AX
         RET
@@ -1698,6 +1681,8 @@ GET_NEXT_CLUSTER:
 ; CL <- Number of sectors to write.
 ; DL <- Drive number.
 ; ES:BX <- Pointer to buffer.
+;
+; DH -> BIOS error code.
 WRITE_DISK:
 	PUSH AX
 	PUSH BX
@@ -1707,7 +1692,6 @@ WRITE_DISK:
 	PUSH DI
         PUSH ES
 
-        ; MOVZX DI, CL
 	XOR CH, CH
 	MOV DI, CX
 
@@ -1724,11 +1708,14 @@ WRITE_DISK:
         DEC DI
         JNZ .WRITE_LOOP
 
+	XOR AH, AH
+
 .RETURN:
         POP ES
 	POP DI
 	POP SI
 	POP DX
+	MOV DH, AH
 	POP CX
 	POP BX
 	POP AX
@@ -1739,7 +1726,10 @@ WRITE_DISK:
 ; CX[6:15] <- Track/Cylinder.
 ; DH <- Head number.
 ; DL <- Drive number.
+;
+; AH -> BIOS error code.
 WRITE_CHS:
+	PUSH DX
         PUSH AX
         PUSH DI
         MOV DI, 3
@@ -1765,7 +1755,10 @@ WRITE_CHS:
 
 .OUT:
         POP DI
+	MOV DH, AH
         POP AX
+	MOV AH, DH
+	POP DX
         RET
 
 .DISKETTE_CHANGED:
@@ -1779,6 +1772,8 @@ WRITE_CHS:
 ; CL <- Number of sectors to read.
 ; DL <- Drive number.
 ; ES:BX <- Pointer to buffer.
+;
+; DH -> BIOS error code.
 READ_DISK:
 	PUSH AX
 	PUSH BX
@@ -1788,7 +1783,6 @@ READ_DISK:
 	PUSH DI
         PUSH ES
 
-        ; MOVZX DI, CL
 	XOR CH, CH
 	MOV DI, CX
 
@@ -1804,11 +1798,14 @@ READ_DISK:
         DEC DI
         JNZ .READ_LOOP
 
+	XOR AH, AH
+
 .RETURN:
         POP ES
 	POP DI
 	POP SI
 	POP DX
+	MOV DH, AH
 	POP CX
 	POP BX
 	POP AX
@@ -1819,7 +1816,10 @@ READ_DISK:
 ; CX[6:15] <- Track/Cylinder.
 ; DH <- Head number.
 ; DL <- Drive number.
+;
+; AH -> BIOS error code.
 READ_CHS:
+	PUSH DX
         PUSH AX
         PUSH DI
         MOV DI, 3
@@ -1845,7 +1845,10 @@ READ_CHS:
 
 .OUT:
         POP DI
+	MOV DH, AH
         POP AX
+	MOV AH, DH
+	POP DX
         RET
 
 .DISKETTE_CHANGED:
@@ -1855,6 +1858,7 @@ READ_CHS:
 	CALL RELOAD_FILESYSTEM
 	JMP .OUT_CARRY
 
+; ljubi bog to je katastrofa
 ; DL <- Drive number.
 ;
 ; Reloads the current filesystem information in case of diskette change.

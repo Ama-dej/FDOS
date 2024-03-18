@@ -12,21 +12,26 @@ MAKE_DIRECTORY_INT:
 
 	MOV DH, 0x10
         MOV SI, FILENAME_BUFFER
+	PUSH AX
         CALL CREATE_ENTRY
         JNC .NO_ERROR
 
         MOV BYTE[INT_RET_CODE], AL
+	POP AX
         JMP RET_CODE_INT
 
 .NO_ERROR:
+	POP AX
         MOV WORD[ES:DI + 26], CX
         MOV WORD[ES:DI + 28], 0
         MOV WORD[ES:DI + 30], 0
-        ; MOV BYTE[ES:DI + 11], 0x10
+        MOV BYTE[ES:DI + 11], 0x10
 
         PUSH CX
         CALL GET_DIRECTORY_SIZE
+	PUSH DX
         CALL STORE_DIRECTORY
+	POP DX
         POP CX
         JC ENTRY_WRITE_ERROR
 
@@ -66,7 +71,9 @@ MAKE_DIRECTORY_INT:
         MOV CX, 1
         PUSH AX
         MOV AX, WORD[FILE_SIZE_UPPER]
-        CALL STORE_DIRECTORY
+	PUSH DX
+	CALL STORE_DIRECTORY
+	POP DX
         POP AX
         JC ENTRY_WRITE_ERROR
 
@@ -85,6 +92,12 @@ MAKE_DIRECTORY_INT:
 
         CALL STORE_FAT
         JC ENTRY_WRITE_ERROR
+
+	MOV AX, WORD[WORKING_DIRECTORY_FIRST_SECTOR]
+	XOR BX, BX
+	MOV ES, BX
+	MOV BX, WORD[WORKING_DIRECTORY]
+	CALL LOAD_DIRECTORY ; <- Why the heck does this need to be here. Rewrite this entire s***** ISR in the near future.
 
         JMP RET_CODE_INT
 

@@ -66,7 +66,7 @@ COPY_FILE_INT:
         MOV DI, FILENAME_BUFFER
         CALL CONVERT_TO_8_3
         JC INT_NOT_FOUND_ERROR
-
+	
         CMP BYTE[SI], '.'
         JE INT_SYNTAX_ERROR
 
@@ -77,13 +77,7 @@ COPY_FILE_INT:
         CALL TRAVERSE_PATH
         JNC .NO_ERROR
 
-        ; SHR AX, 12
-	ROL AX, 1
-	ROL AX, 1
-	ROL AX, 1
-	ROL AX, 1
-	AND AX, 0x000F
-        MOV BYTE[INT_RET_CODE], AL
+        MOV BYTE[INT_RET_CODE], DH
         JMP RET_CODE_INT
 
 .NO_ERROR:
@@ -130,7 +124,7 @@ COPY_FILE_INT:
         CALL GET_FREE_CLUSTER
         POP AX
         JC INT_OUT_OF_SPACE_ERROR
-
+	
         INC CX
 
         TEST AX, AX
@@ -154,6 +148,7 @@ COPY_FILE_INT:
         PUSH CX
         CALL MAKE_ENTRY_PROC ; Bad naming.
         POP CX
+	MOV BYTE[INT_RET_CODE], DH
         JC RET_CODE_INT
 
         MOV SI, FILENAME_BUFFER
@@ -254,7 +249,7 @@ COPY_FILE_INT:
         POP BX
         POP AX
 
-        MOV BYTE[INT_RET_CODE], 0x01
+        MOV BYTE[INT_RET_CODE], 0x10
         JMP .RESTORE
 
 .WRITE_ERROR:
@@ -262,7 +257,7 @@ COPY_FILE_INT:
         POP BX
         POP AX
 
-        MOV BYTE[INT_RET_CODE], 0x02
+        MOV BYTE[INT_RET_CODE], 0x0A ; <- Misleading error
         JMP .RESTORE
 
 .RESTORE:

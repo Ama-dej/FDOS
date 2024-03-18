@@ -3,6 +3,7 @@
 ; DH = File attributes.
 MAKE_FILE_INT:
         CALL MAKE_ENTRY_PROC
+	MOV BYTE[INT_RET_CODE], DH
         JC RET_CODE_INT
 
         MOV SI, FILENAME_BUFFER

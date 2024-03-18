@@ -10,16 +10,10 @@ CHANGE_DIRECTORY_INT:
         CALL TRAVERSE_PATH
         JNC .OK
 
-        ; SHR AX, 12
-	ROL AX, 1
-	ROL AX, 1
-	ROL AX, 1
-	ROL AX, 1
-	AND AX, 0x000F
-        MOV DX, DOS_SEGMENT
-        MOV ES, DX
+        MOV AX, DOS_SEGMENT
+        MOV ES, AX
 
-        MOV BYTE[ES:INT_RET_CODE], AL
+        MOV BYTE[ES:INT_RET_CODE], DH
         JMP RET_CODE_INT
 
 .OK:
