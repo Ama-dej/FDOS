@@ -246,11 +246,13 @@ RESTORE_WORKING_DIRECTORY:
 	POP AX
 	RET
 
-; DH <- Entry attributes
+; AX <- Starting cluster.
+; DH <- Entry attributes.
 ; SI <- Converted 8_3 filename.
 ; ES:BX <- Directory location.
 ;
-; If CF == 1 -> AL = Error code.
+; CF -> Set if carry.
+; DH -> Error code.
 ; ES:DI -> Entry location.
 CREATE_ENTRY:
 	PUSH CX
@@ -298,18 +300,18 @@ CREATE_ENTRY:
 
 	MOV BYTE[ES:DI + 11], DH
 	MOV WORD[ES:DI + 20], CX
-	MOV WORD[ES:DI + 26], CX
+	MOV WORD[ES:DI + 26], AX
 	MOV WORD[ES:DI + 28], CX
 	MOV WORD[ES:DI + 30], CX
 
 	JMP .OUT
 
 .FILE_EXISTS_ERROR:
-	MOV AL, 0x44
+	MOV DH, 0x44
 	JMP .ERROR
 
 .DIRECTORY_FULL_ERROR:
-	MOV AL, 0x48
+	MOV DH, 0x48
 
 .ERROR:
 	STC
@@ -2047,6 +2049,7 @@ LBA_TO_CHS:
         RET
 
 ; Floppy drives sometimes spit out an error if you don't reset after fast consecutive read/writes.
+; (NOTE) This procedure is functionally useless.
 RESET_DISK:
         PUSH AX
         PUSH DX

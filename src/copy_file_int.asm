@@ -152,7 +152,7 @@ COPY_FILE_INT:
         JC RET_CODE_INT
 
         MOV SI, FILENAME_BUFFER
-        XOR DH, DH
+        XOR DH, DH ; <- Narobe.
         CALL CREATE_ENTRY
         JC INT_FILE_EXISTS_ERROR
 
