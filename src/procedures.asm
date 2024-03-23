@@ -1093,7 +1093,7 @@ LOAD_FAT:
 
         MOV AX, WORD[RESERVED_SECTORS]
         ; MOV DL, BYTE[DRIVE_NUMBER]
-        MOV DH, BYTE[NUMBER_OF_FAT]
+        MOV CH, BYTE[NUMBER_OF_FAT]
 
 .LOAD_LOOP:
         CALL READ_DISK
@@ -1101,7 +1101,7 @@ LOAD_FAT:
 
         ADD AX, CX
 
-        DEC DH
+        DEC CH 
         JNZ .LOAD_LOOP
 	CLC
 

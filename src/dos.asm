@@ -621,7 +621,7 @@ DIR:
 	JMP DOS_START
 
 ; Reads the filesystem info from a FAT12 formatted floppy disk in a specific drive.
-; this procedure will hang if it attempts to access a non-formatted disk, so _NOT_ trust it
+; this procedure will hang if it attempts to access a non-formatted disk, so do _NOT_ trust it
 DSK:
 	MOV SI, COMMAND_PARSED
 	XOR AL, AL
