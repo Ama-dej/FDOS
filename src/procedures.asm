@@ -164,65 +164,7 @@ SORT_ENTRIES:
 .OFFSET: DW 0
 .TEMP_BUFFER: TIMES 32 DB 0
 
-; Here to reuse code.
-; Both interrupts for creating files and directories use literally the same code at the start.
-MAKE_ENTRY_PROC:
-        PUSH SI
-        XOR AL, AL
-        CALL FINDCHAR
-        POP DX
-
-        MOV DI, DOS_SEGMENT
-        MOV ES, DI
-        MOV DI, TEMP_BUFFER
-
-        MOV CX, SI
-        SUB CX, DX
-        INC CX
-        MOV SI, DX
-        CLD
-
-.COPY_LOOP:
-        LODSB
-        CALL TO_UPPER
-        STOSB
-
-        LOOP .COPY_LOOP
-
-        MOV SI, DOS_SEGMENT
-        MOV DS, SI
-
-        MOV SI, TEMP_BUFFER
-        MOV DI, FILENAME_BUFFER
-        MOV BX, DATA_BUFFER
-        MOV DL, BYTE[DRIVE_NUMBER]
-        CALL CONVERT_LE_AND_TRAVERSE
-        JNC .OK
-
-        MOV BYTE[INT_RET_CODE], DH
-        STC
-        JMP .NOT_WORKING_DIRECTORY
-
-.OK:
-        CMP AX, WORD[WORKING_DIRECTORY_FIRST_SECTOR]
-        JE .WORKING_DIRECTORY
-
-        MOV BX, DATA_BUFFER
-        MOV DL, BYTE[DRIVE_NUMBER]
-        CLC
-        JMP .NOT_WORKING_DIRECTORY
-
-.WORKING_DIRECTORY:
-        XOR BX, BX
-        MOV ES, BX
-        MOV BX, WORD[WORKING_DIRECTORY]
-        MOV DL, BYTE[DRIVE_NUMBER]
-        CLC
-
-.NOT_WORKING_DIRECTORY:
-        RET
-
-;
+; Exists.
 RESTORE_WORKING_DIRECTORY:
 	PUSH AX
 	PUSH BX
@@ -366,7 +308,7 @@ CONVERT_LE_AND_TRAVERSE:
 	CMP BYTE[SI], 0
 	JZ .CONVERT_ERROR
 
-	MOV AH, BYTE[SI]
+	MOV DL, BYTE[SI]
 	MOV BYTE[SI], 0
 
 	PUSH CX 
@@ -377,8 +319,12 @@ CONVERT_LE_AND_TRAVERSE:
 	JC .OUT
 
 	MOV SI, CX
-	MOV BYTE[SI], AH
+	MOV BYTE[SI], DL
 	XOR DH, DH
+
+	; CMP BYTE[SI], 0
+	; JZ .CONVERT_ERROR
+
 	JMP .OUT
 
 .CONVERT_ERROR:
@@ -399,6 +345,24 @@ CONVERT_LE_AND_TRAVERSE:
 	MOV DH, CH
 	POP CX
 	POP SI
+	RET
+
+; Checks if the path ends with a seperator.
+;
+; SI <- Path.
+;
+; ZF -> Set if the last character is the seperator character
+CHECK_IF_LAST_IS_SEPERATOR:
+	PUSH AX
+	PUSH SI
+
+	XOR AL, AL
+	CALL FINDCHAR
+
+	CMP BYTE[SI - 1], '/'
+
+	POP SI
+	POP AX
 	RET
 
 ; SI <- Location of entry in file path.
@@ -495,7 +459,6 @@ IS_PATH_VALID:
 
 ; ES:BX <- Where to load the directory.
 ; SI <- Path string.
-; DL <- Drive number. (LIE)
 ;
 ; AX -> First sector of the final directory.
 ; SI -> Pointer to the entry where the error occured (Points to 0 if all goes well).
@@ -603,7 +566,7 @@ TRAVERSE_PATH:
 	MOV ES, BX
 	MOV BX, DATA_BUFFER
 
-	MOV DL, BYTE[DRIVE_NUMBER] ; <- When multi drive support arrives. (figured out this is ok)
+	MOV DL, BYTE[DRIVE_NUMBER]
         CALL LOAD_DIRECTORY
         JC .DISK_ERROR
 
@@ -1495,6 +1458,8 @@ MEMCPY:
 
 ; AX <- Current cluster.
 ; ES:BX <- Source buffer.
+;
+; DH -> BIOS error code.
 WRITE_DATA:
         PUSH AX
         PUSH CX
