@@ -33,6 +33,7 @@ mv pong.bin games/pong.prg
 mv mandel.bin demo/mandel.prg
 mv fib.bin demo/fib.prg
 mv div.bin demo/div.prg
+mv test.bin demo/test.prg
 
 mv rombasic.bin devel/rombasic.prg
 

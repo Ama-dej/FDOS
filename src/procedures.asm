@@ -264,7 +264,6 @@ CREATE_ENTRY:
 	RET
 
 ; SI <- Path.
-; DL <- Drive number. (NE VEČ)
 ; ES:BX <- Where to load the directory.
 ; DI <- Location of an 11 byte buffer.
 ;
@@ -287,7 +286,7 @@ CONVERT_LE_AND_TRAVERSE:
 	; SUB SI, 1
 
 	PUSH ES
-	MOV AX, DS
+	MOV AX, DOS_SEGMENT
 	MOV ES, AX
 
 .FIND_SEPERATOR:
@@ -321,9 +320,6 @@ CONVERT_LE_AND_TRAVERSE:
 	MOV SI, CX
 	MOV BYTE[SI], DL
 	XOR DH, DH
-
-	; CMP BYTE[SI], 0
-	; JZ .CONVERT_ERROR
 
 	JMP .OUT
 
@@ -464,6 +460,8 @@ IS_PATH_VALID:
 ; SI -> Pointer to the entry where the error occured (Points to 0 if all goes well).
 ; CF -> Cleared on success, set otherwise.
 ; DH -> Error code.
+;
+; TODO: enkrat temeljito poglej
 TRAVERSE_PATH:
 	PUSH BX
 	PUSH CX
@@ -506,14 +504,14 @@ TRAVERSE_PATH:
 	PUSH DS
         JC .DIRECTORY_NOT_FOUND
 
-	MOV DI, DOS_SEGMENT
-	MOV DS, DI 
-
 	CMP BYTE[SI], '/'
 	JNE .NOT_ROOT
 
 	CMP BYTE[SI - 1], '/'
 	JE .DIRECTORY_NOT_FOUND
+
+	MOV DI, DOS_SEGMENT
+	MOV DS, DI 
 
 	PUSH ES
 	PUSH CX
@@ -534,8 +532,12 @@ TRAVERSE_PATH:
 	JMP .ROOT_DIR
 
 .NOT_ROOT:
+	MOV DI, DOS_SEGMENT
+	MOV DS, DI
+
 	PUSH SI
         MOV SI, CONVERTED_8_3
+
         CALL FIND_ENTRY
 	POP SI
         JC .DIRECTORY_NOT_FOUND
