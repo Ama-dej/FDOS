@@ -1,6 +1,59 @@
 ; PROCEDURES
 ; ----------
 
+; ES:BX <- Directory location.
+;
+; ZF -> Set if empty.
+IS_DIRECTORY_EMPTY:
+	PUSH BX
+
+	ADD BX, 64
+
+.COMPARE_LOOP:
+	CMP BYTE[ES:BX], 0	
+	JZ .EXIT
+
+	CMP BYTE[ES:BX], 0xE5
+	JNE .EXIT
+
+	ADD BX, 32
+	JMP .COMPARE_LOOP
+
+.EXIT:
+	POP BX
+	RET
+
+; AX <- First cluster.
+; SI <- Location of first cluster chain of current path.
+;
+; ZF -> Set if not found.
+IS_FIRST_CLUSTER_IN_PATH:
+	PUSH AX
+	PUSH CX
+	PUSH DX
+	PUSH SI
+	CLD
+
+	MOV DX, AX
+	MOV CX, 8
+
+.COMPARE_LOOP:
+	LODSW
+
+	CMP DX, AX
+	JE .EXIT
+
+	LOOP .COMPARE_LOOP
+
+	CMP CX, 1
+
+.EXIT:
+	POP SI
+	POP DX
+	POP CX
+	POP AX
+	RET
+
 ; DL <- Drive number.
 ;
 ; AL -> Drive letter.
